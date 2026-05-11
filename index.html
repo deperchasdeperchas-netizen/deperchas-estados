@@ -414,19 +414,14 @@ function mostrarCarrusel(){
 
 function generarCaption(r){
   const p=r.product;
-  let txt=r.nombre+'
-';
+  let txt=r.nombre+'\n';
   if(r.tipo==='Ficha precio' && p.price){
     const lista=parseFloat(p.price);
-    txt+='Lista: '+fmt(lista)+'
-';
-    txt+='Transferencia: '+fmt(lista*0.9)+' (−10%)
-';
-    txt+='Efectivo: '+fmt(lista*0.8)+' (−20%)
-';
+    txt+='Lista: '+fmt(lista)+'\n';
+    txt+='Transferencia: '+fmt(lista*0.9)+' (−10%)\n';
+    txt+='Efectivo: '+fmt(lista*0.8)+' (−20%)\n';
   }
-  if(activeBadges.length) txt+=activeBadges.join(' · ')+'
-';
+  if(activeBadges.length) txt+=activeBadges.join(' · ')+'\n';
   txt+='🔗 '+LINK;
   return txt;
 }
