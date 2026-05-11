@@ -423,12 +423,22 @@ async function genFicha(p, imgSrc){
 }
 
 // CARRUSEL
-function iniciarCarrusel(){ carruselIdx=0; mostrarCarrusel(); }
+function iniciarCarrusel(){ 
+  if(!results.length){ alert('No hay imágenes generadas'); return; }
+  carruselIdx=0; 
+  mostrarCarrusel(); 
+}
 
 function mostrarCarrusel(){
-  if(carruselIdx>=results.length){ document.getElementById('carruselPanel').style.display='none'; toast('✓ Todas las imágenes enviadas'); return; }
+  if(carruselIdx>=results.length){ 
+    document.getElementById('carruselPanel').style.display='none'; 
+    toast('✓ Todas las imágenes enviadas'); 
+    return; 
+  }
   const r=results[carruselIdx];
-  document.getElementById('carruselPanel').style.display='';
+  const panel=document.getElementById('carruselPanel');
+  panel.style.display='block';
+  panel.style.visibility='visible';
   document.getElementById('carruselCounter').textContent=(carruselIdx+1)+' de '+results.length;
   document.getElementById('carruselNombre').textContent=r.nombre;
   document.getElementById('carruselTipo').textContent=r.tipo==='Ficha precio'?'📋 Ficha con precio y descuentos':'🖼 Lookbook';
