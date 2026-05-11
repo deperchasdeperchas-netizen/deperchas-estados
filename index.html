@@ -342,11 +342,26 @@ async function genLookbook(p, imgSrc){
   const grad=ctx.createLinearGradient(0,H*0.78,0,H);
   grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(1,'rgba(0,0,0,0.38)');
   ctx.fillStyle=grad;ctx.fillRect(0,H*0.78,W,H*0.22);
-  const pad=48,nS=58,lS=38,boxH=nS+lS+52,boxX=pad,boxY=H-pad-boxH;
-  ctx.save();ctx.beginPath();roundRect(ctx,boxX,boxY,W-pad*2,boxH,18);ctx.fillStyle='rgba(20,16,13,0.58)';ctx.fill();ctx.restore();
+  // Calcular altura de caja dinamicamente segun nombre
+  const pad=48,nS=46,lS=36;
+  const boxX=pad, boxW=W-pad*2;
+  // Medir cuantas lineas ocupa el nombre
+  const tmpCanvas=document.createElement('canvas');
+  const tmpCtx=tmpCanvas.getContext('2d');
+  tmpCtx.font='italic 400 '+nS+'px Georgia,serif';
+  const words=(p.name||'').split(' ');
+  let line='',lines=[];
+  words.forEach(w=>{const t=line+w+' ';if(tmpCtx.measureText(t).width>boxW-56&&line){lines.push(line);line=w+' ';}else line=t;});
+  lines.push(line);
+  const nombreH=lines.length*(nS+10);
+  const boxH=nombreH+lS+52;
+  const boxY=H-pad-boxH;
+  ctx.save();ctx.beginPath();roundRect(ctx,boxX,boxY,boxW,boxH,18);ctx.fillStyle='rgba(20,16,13,0.58)';ctx.fill();ctx.restore();
   ctx.save();ctx.font='italic 400 '+nS+'px Georgia,serif';ctx.fillStyle='#fff';ctx.shadowColor='rgba(0,0,0,0.4)';ctx.shadowBlur=8;ctx.textAlign='left';
-  wrapText(ctx,p.name||'',boxX+28,boxY+nS+16,W-pad*2-56,nS+8);ctx.restore();
-  ctx.save();ctx.font='300 '+lS+'px sans-serif';ctx.fillStyle='rgba(255,255,255,0.75)';ctx.textAlign='left';ctx.fillText(LINK,boxX+28,boxY+nS+lS+32);ctx.restore();
+  let ty=boxY+nS+16;
+  lines.forEach(l=>{ctx.fillText(l.trim(),boxX+28,ty);ty+=nS+10;});
+  ctx.restore();
+  ctx.save();ctx.font='300 '+lS+'px sans-serif';ctx.fillStyle='rgba(255,255,255,0.75)';ctx.textAlign='left';ctx.fillText(LINK,boxX+28,ty+8);ctx.restore();
   return new Promise(r=>canvas.toBlob(b=>r(b),'image/jpeg',0.93));
 }
 
@@ -430,11 +445,13 @@ function siguienteCarrusel(){ carruselIdx++; mostrarCarrusel(); }
 
 async function compartirActual(){
   const r=results[carruselIdx];
-  const file=new File([r.blob],'deperchas.jpg',{type:'image/jpeg'});
-  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
-    try{await navigator.share({files:[file],title:r.nombre,text:generarCaption(r)});setTimeout(()=>siguienteCarrusel(),800);}
-    catch(e){if(e.name!=='AbortError')copiarYAbrirWP();}
-  }else{copiarYAbrirWP();}
+  const esMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(esMobile && navigator.share){
+    const file=new File([r.blob],'deperchas.jpg',{type:'image/jpeg'});
+    try{await navigator.share({files:[file],title:r.nombre,text:generarCaption(r)});setTimeout(()=>siguienteCarrusel(),800);return;}
+    catch(e){if(e.name==='AbortError')return;}
+  }
+  copiarYAbrirWP();
 }
 
 async function copiarYAbrirWP(){
