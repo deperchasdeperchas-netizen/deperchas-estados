@@ -476,13 +476,20 @@ async function compartirActual(){
   copiarYAbrirWP();
 }
 
+let wpAbierto = false;
 async function copiarYAbrirWP(){
   const r=results[carruselIdx];
   const caption=generarCaption(r);
   try{await navigator.clipboard.writeText(caption);}catch{}
   descargarActual(false);
-  toast('Caption copiado — pegalo en WhatsApp Web');
-  setTimeout(()=>window.open('https://web.whatsapp.com','_blank'),400);
+  if(!wpAbierto){
+    window.open('https://web.whatsapp.com','whatsapp_deperchas');
+    wpAbierto = true;
+    toast('WhatsApp Web abierto · imagen descargada · caption copiado');
+  } else {
+    window.open('https://web.whatsapp.com','whatsapp_deperchas');
+    toast('Imagen descargada · caption copiado — pasá a la siguiente en WhatsApp');
+  }
 }
 
 function descargarActual(avanzar=true){
