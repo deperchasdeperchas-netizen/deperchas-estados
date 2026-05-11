@@ -140,6 +140,14 @@ input[type=file]{display:none}
     <button class="btn-generar" style="width:100%;padding:13px;margin-top:.5rem;font-size:14px" id="btnGen" onclick="generarTodas()">Generar imágenes</button>
   </div>
 
+  <!-- Resultados -->
+  <div class="panel" id="resultsPanel" style="display:none">
+    <h2>✓ Imágenes listas</h2>
+    <button class="btn-car-start" onclick="iniciarCarrusel()">📲 Modo envío uno por uno</button>
+    <button class="btn-dl-all" onclick="dlTodas()">⬇ Descargar todas</button>
+    <div class="results-grid" id="resultsGrid"></div>
+  </div>
+
   <!-- Carrusel -->
   <div class="carrusel-panel" id="carruselPanel">
     <div class="carrusel-header">
@@ -160,13 +168,6 @@ input[type=file]{display:none}
     <button class="btn-skip" onclick="siguienteCarrusel()">Saltar → siguiente</button>
   </div>
 
-  <!-- Resultados -->
-  <div class="panel" id="resultsPanel" style="display:none">
-    <h2>✓ Imágenes listas</h2>
-    <button class="btn-car-start" onclick="iniciarCarrusel()">📲 Modo envío uno por uno</button>
-    <button class="btn-dl-all" onclick="dlTodas()">⬇ Descargar todas</button>
-    <div class="results-grid" id="resultsGrid"></div>
-  </div>
 
 </div>
 
@@ -374,11 +375,22 @@ async function genFicha(p, imgSrc){
     const scale=Math.max(W/photo.width,H/photo.height);
     ctx.drawImage(photo,(W-photo.width*scale)/2,(H-photo.height*scale)/2,photo.width*scale,photo.height*scale);
   }catch{ctx.fillStyle='#e8e4de';ctx.fillRect(0,0,W,H);}
-  const panelH=H*0.54;
-  const grad=ctx.createLinearGradient(0,H-panelH-100,0,H);
-  grad.addColorStop(0,'rgba(20,16,13,0)');grad.addColorStop(0.12,'rgba(20,16,13,0.93)');grad.addColorStop(1,'rgba(20,16,13,0.98)');
-  ctx.fillStyle=grad;ctx.fillRect(0,H-panelH-100,W,panelH+100);
-  let y=H-panelH+30;const pad=60;
+  // Calcular altura real del contenido para no dejar espacio vacío
+  const pad=60;
+  let contentH = 0;
+  if(activeBadges.length>0) contentH += 80;
+  const nombreLineas = Math.ceil(ctx.measureText(p.name||'').width / (W - pad*2 - 40) * 62/62) || (p.name||'').length > 28 ? 2 : 1;
+  contentH += nombreLineas === 2 ? 160 : 90;
+  contentH += 50; // separador
+  if(p.price) contentH += 38+24 + 46+24 + 54+24 + 20; // 3 filas de precios
+  contentH += 50 + 38; // separador + link
+  contentH += 60; // padding inferior
+
+  const panelH = Math.min(contentH + 40, H * 0.56);
+  const grad=ctx.createLinearGradient(0,H-panelH-120,0,H);
+  grad.addColorStop(0,'rgba(20,16,13,0)');grad.addColorStop(0.15,'rgba(20,16,13,0.93)');grad.addColorStop(1,'rgba(20,16,13,0.98)');
+  ctx.fillStyle=grad;ctx.fillRect(0,H-panelH-120,W,panelH+120);
+  let y=H-panelH+40;
   if(activeBadges.length>0){
     activeBadges.forEach((b,i)=>{
       const bx=pad+i*250;
@@ -424,7 +436,7 @@ function mostrarCarrusel(){
   document.getElementById('carruselImg').src=URL.createObjectURL(r.blob);
   const dots=document.getElementById('cpDots'); dots.innerHTML='';
   results.forEach((_,i)=>{const d=document.createElement('div');d.className='cp-dot'+(i<carruselIdx?' done':i===carruselIdx?' current':'');dots.appendChild(d);});
-  window.scrollTo({top:0,behavior:'smooth'});
+  document.getElementById('carruselPanel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function generarCaption(r){
@@ -483,7 +495,7 @@ function renderResults(){
     body.innerHTML='<div class="res-card-name">'+r.nombre+'</div><div class="res-card-type">'+r.tipo+'</div>';
     const actions=document.createElement('div');actions.className='res-actions';
     const btnDl=document.createElement('button');btnDl.className='btn-dl-r';btnDl.textContent='⬇';btnDl.onclick=()=>{const fname=(r.nombre||'').toLowerCase().replace(/[^a-z0-9]/gi,'-');const a=document.createElement('a');a.href=URL.createObjectURL(r.blob);a.download='deperchas-'+fname+'.jpg';a.click();};
-    const btnSh=document.createElement('button');btnSh.className='btn-sh-r';btnSh.textContent='↗';btnSh.onclick=()=>{carruselIdx=i;mostrarCarrusel();window.scrollTo({top:0,behavior:'smooth'}); };
+    const btnSh=document.createElement('button');btnSh.className='btn-sh-r';btnSh.textContent='↗';btnSh.onclick=()=>{carruselIdx=i;mostrarCarrusel();document.getElementById('carruselPanel').scrollIntoView({behavior:'smooth',block:'start'}); };
     actions.appendChild(btnDl);actions.appendChild(btnSh);body.appendChild(actions);card.appendChild(body);grid.appendChild(card);
   });
   panel.scrollIntoView({behavior:'smooth'});
