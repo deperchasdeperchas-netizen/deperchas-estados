@@ -138,6 +138,15 @@ input[type=file]{display:none}
     <div class="progress-bar" id="progBar" style="display:none"><div class="progress-fill" id="progFill"></div></div>
     <p class="progress-txt" id="progTxt"></p>
     <button class="btn-generar" style="width:100%;padding:13px;margin-top:.5rem;font-size:14px" id="btnGen" onclick="generarTodas()">Generar imágenes</button>
+    <!-- Nuevo bloque para el Video -->
+<div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+    <h2 style="font-size: 13px;">Añadir música para Video (Opcional)</h2>
+    <label for="audioInput" style="display: inline-block; padding: 8px 12px; background: var(--accent-light); color: var(--accent); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 500;">
+        📁 Seleccionar MP3
+    </label>
+  <input type="file" id="audioInput" accept="audio/mp3" onchange="document.getElementById('audioName').textContent = this.files[0].name">
+    <span id="audioName" style="font-size: 11px; color: var(--muted); margin-left: 8px;">No hay audio seleccionado</span>
+    </div>
   </div>
 
   <!-- Resultados -->
@@ -313,7 +322,13 @@ async function generarTodas(){
       done++; progFill.style.width=(done/total*100)+'%';
     }
   }
+  
+  // Mensaje de éxito antes de empezar con los videos
   progTxt.textContent='✓ ¡Listas! '+results.length+' imágenes generadas';
+  
+  // Procesar videos en la nube (Cloudinary)
+  await procesarVideosSiHayAudio();
+  
   btn.disabled=false;
   document.getElementById('panelGenerar').style.display='none';
   renderResults();
@@ -623,9 +638,44 @@ function cargarMusicaPropia(input){
   renderMusicList();
 }
 
+// 1. PEGA LAS FUNCIONES NUEVAS ACÁ (antes de cargarProductos)
+async function crearVideoReel(r, audioFile) {
+    const cloudName = 'danlc50hp';
+    const unsignedPreset = 'deperchas_videos';
+    try {
+        const formDataImg = new FormData();
+        formDataImg.append('file', r.blob);
+        formDataImg.append('upload_preset', unsignedPreset);
+        const resImg = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formDataImg });
+        const dataImg = await resImg.json();
+
+        const formDataAudio = new FormData();
+        formDataAudio.append('file', audioFile);
+        formDataAudio.append('upload_preset', unsignedPreset);
+        formDataAudio.append('resource_type', 'video');
+        const resAudio = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, { method: 'POST', body: formDataAudio });
+        const dataAudio = await resAudio.json();
+
+        const audioId = dataAudio.public_id.replace(/\//g, ':');
+        const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_audio:${audioId}/fl_layer_apply/${dataImg.public_id}.mp4`;
+
+        const a = document.createElement('a');
+        a.href = videoUrl;
+        a.download = `video-${r.nombre}.mp4`;
+        a.click();
+    } catch (e) { console.error("Error:", e); }
+}
+
+async function procesarVideosSiHayAudio() {
+    const audioFile = document.getElementById('audioInput').files[0];
+    if (!audioFile) return;
+    document.getElementById('progTxt').textContent = 'Generando videos en la nube...';
+    const fichas = results.filter(r => r.tipo === 'Ficha precio');
+    for (const ficha of fichas) { await crearVideoReel(ficha, audioFile); }
+}
 
 cargarProductos();
-</script>
+</script> 
 </body>
 </html>
 
