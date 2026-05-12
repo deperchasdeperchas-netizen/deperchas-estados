@@ -665,7 +665,7 @@ async function crearVideoReel(r, audioFile) {
             const imageId = dataImg.public_id.replace(/\//g, ':');
 
             // 4. URL correcta sin fl_attachment
-         const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_video:${audioId},fl_layer_apply,so_0/${imageId}.jpg/fl_attachment/video.mp4`;
+       const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_video:${audioId},fl_layer_apply,so_0/${imageId}.mp4`;
             console.log("URL del video:", videoUrl);
           const a = document.createElement('a'); a.href = videoUrl; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
             toast('✓ Video listo — se abrió en nueva pestaña');
