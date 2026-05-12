@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Deperchas — Generador de Estados</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.12.6/ffmpeg.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -636,7 +636,65 @@ function renderResults(){
 
 function wrapText(ctx,text,x,y,maxW,lh){const words=text.split(' ');let line='';for(let i=0;i<words.length;i++){const test=line+words[i]+' ';if(ctx.measureText(test).width>maxW&&i>0){ctx.fillText(line,x,y);line=words[i]+' ';y+=lh;}else line=test;}ctx.fillText(line,x,y);}
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
+// --- LÓGICA DE VIDEO ---
+let ffmpeg = null;
+let selectedMusic = null;
+const musicTracks = [
+  { id: 'lofi', name: 'Chill Lofi', genre: 'Relax', url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808f3030e.mp3' },
+  { id: 'bossa', name: 'Summer Bossa', genre: 'Classic', url: 'https://cdn.pixabay.com/audio/2022/10/16/audio_27607755e1.mp3' },
+  { id: 'jazz', name: 'Midnight Jazz', genre: 'Elegant', url: 'https://cdn.pixabay.com/audio/2022/01/26/audio_d0c6ff1101.mp3' }
+];
 
+async function initFFmpeg() {
+  if (ffmpeg) return;
+  ffmpeg = FFmpeg.createFFmpeg({ log: true });
+  await ffmpeg.load();
+}
+
+function renderMusicList() {
+  const list = document.getElementById('musicList');
+  list.innerHTML = '';
+  musicTracks.forEach(t => {
+    const item = document.createElement('div');
+    item.className = 'music-item' + (selectedMusic?.id === t.id ? ' selected' : '');
+    item.innerHTML = `<span>${t.name}</span>`;
+    item.onclick = () => { selectedMusic = t; renderMusicList(); toast(`Elegido: ${t.name}`); };
+    list.appendChild(item);
+  });
+}
+
+function cargarMusicaPropia(input) {
+  const file = input.files[0];
+  if (!file) return;
+  selectedMusic = { id: 'custom', name: file.name, url: URL.createObjectURL(file) };
+  document.getElementById('musicUploadName').textContent = file.name;
+  renderMusicList();
+}
+
+async function generarVideo() {
+  const r = results[carruselIdx];
+  if (!selectedMusic) {
+    document.getElementById('musicPanel').classList.add('open');
+    renderMusicList();
+    toast('Elegí la música primero');
+    return;
+  }
+  const btn = document.getElementById('btnVideo');
+  btn.disabled = true; btn.textContent = 'Procesando...';
+  try {
+    await initFFmpeg();
+    ffmpeg.FS('writeFile', 'i.jpg', new Uint8Array(await r.blob.arrayBuffer()));
+    const aD = new Uint8Array(await (await fetch(selectedMusic.url)).arrayBuffer());
+    ffmpeg.FS('writeFile', 'a.mp3', aD);
+    await ffmpeg.run('-loop','1','-i','i.jpg','-i','a.mp3','-c:v','libx264','-t','10','-pix_fmt','yuv420p','-vf','scale=1080:1920','-c:a','aac','-shortest','o.mp4');
+    const data = ffmpeg.FS('readFile', 'o.mp4');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+    a.download = 'video-deperchas.mp4'; a.click();
+    toast('✓ Video listo');
+  } catch (e) { toast('Error al crear video'); }
+  finally { btn.disabled = false; btn.textContent = '🎬 Generar video con música (10s)'; }
+}
 cargarProductos();
 </script>
 </body>
