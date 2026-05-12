@@ -663,7 +663,7 @@ async function crearVideoReel(r, audioFile) {
             // 3. Generar la URL de transformación
             // Nota: 'so_0' asegura que el audio empiece al inicio
             const audioId = dataAudio.public_id.replace(/\//g, ':');
-            const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_audio:${audioId}/fl_layer_apply/so_0/${dataImg.public_id}.mp4`;
+            const videoUrl =`https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_video:${audioId}/fl_layer_apply/so_0/${dataImg.public_id}.mp4`;
 
             // 4. Abrir en pestaña nueva. 
             // Si sale 404, esperá 3 segundos y dale a F5.
