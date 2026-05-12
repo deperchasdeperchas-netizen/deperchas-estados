@@ -483,12 +483,18 @@ async function copiarYAbrirWP(){
   try{await navigator.clipboard.writeText(caption);}catch{}
   descargarActual(false);
   if(!wpAbierto){
-    window.open('https://web.whatsapp.com','whatsapp_deperchas');
+    // Intentar abrir app de escritorio primero, sino WhatsApp Web
+    const link = document.createElement('a');
+    link.href = 'whatsapp://';
+    link.click();
+    // Fallback a WhatsApp Web si no abre en 1.5s
+    setTimeout(()=>{
+      window.open('https://web.whatsapp.com','whatsapp_deperchas');
+    }, 1500);
     wpAbierto = true;
-    toast('WhatsApp Web abierto · imagen descargada · caption copiado');
+    toast('✓ WhatsApp abierto · imagen descargada · caption copiado');
   } else {
-    window.open('https://web.whatsapp.com','whatsapp_deperchas');
-    toast('Imagen descargada · caption copiado — pasá a la siguiente en WhatsApp');
+    toast('✓ Imagen descargada · caption copiado — subila al estado');
   }
 }
 
