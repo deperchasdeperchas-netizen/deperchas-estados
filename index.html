@@ -512,7 +512,7 @@ async function compartirActual(){
   copiarYAbrirWP();
 }
 
-// --- FUNCIONES DE DIBUJO (VITALES PARA GENERAR IMÁGENES) ---
+// --- FUNCIONES DE DIBUJO (REINCORPORADAS) ---
 function wrapText(ctx, text, x, y, maxW, lh) {
   const words = text.split(' ');
   let line = '';
@@ -542,11 +542,10 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 // --- LÓGICA DE INSTAGRAM ---
-async function publicarIGStory() {
+async function publicarIGStory(){
   const r = results[carruselIdx];
   const btn = document.getElementById('btnIG');
-  btn.disabled = true;
-  btn.textContent = 'Subiendo...';
+  btn.disabled = true; btn.textContent = 'Subiendo...';
   toast('Subiendo a Instagram...');
   try {
     const filename = 'ig_temp_' + Date.now() + '.jpg';
@@ -555,26 +554,22 @@ async function publicarIGStory() {
       headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'image/jpeg' },
       body: r.blob
     });
-    if (!uploadRes.ok) throw new Error('Error en Supabase: Revisá el bucket "ig-temp"');
+    if(!uploadRes.ok) throw new Error('Error en Supabase: Revisá el bucket "ig-temp"');
     const publicUrl = SUPA_URL + '/storage/v1/object/public/ig-temp/' + filename;
     const mediaRes = await fetch('https://graph.facebook.com/v25.0/' + IG_ID + '/media', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ image_url: publicUrl, media_type: 'IMAGE', caption: generarCaption(r), access_token: IG_TOKEN })
     });
     const mData = await mediaRes.json();
     await fetch('https://graph.facebook.com/v25.0/' + IG_ID + '/media_publish', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ creation_id: mData.id, access_token: IG_TOKEN })
     });
     toast('✓ Story publicada!');
     btn.textContent = '✓ Publicada';
     setTimeout(siguienteCarrusel, 1000);
-  } catch (err) {
-    toast(err.message);
-    btn.disabled = false;
-    btn.textContent = 'Publicar Story en Instagram';
+  } catch(err) {
+    toast(err.message); btn.disabled = false; btn.textContent = 'Publicar Story en Instagram';
   }
 }
 
@@ -599,14 +594,13 @@ async function generarVideo() {
     ffmpeg.FS('writeFile', 'i.jpg', new Uint8Array(await r.blob.arrayBuffer()));
     const aRes = await fetch(selectedMusic.url);
     ffmpeg.FS('writeFile', 'a.mp3', new Uint8Array(await aRes.arrayBuffer()));
-    prog.textContent = 'Renderizando (10s)...';
-    await ffmpeg.run('-loop', '1', '-i', 'i.jpg', '-i', 'a.mp3', '-t', '10', '-c:v', 'libx264', '-vf', 'scale=1080:1920,format=yuv420p', '-c:a', 'aac', '-shortest', 'o.mp4');
+    prog.textContent = 'Renderizando Story (10s)...';
+    await ffmpeg.run('-loop','1','-i','i.jpg','-i','a.mp3','-t','10','-c:v','libx264','-vf','scale=1080:1920,format=yuv420p','-c:a','aac','-shortest','o.mp4');
     const data = ffmpeg.FS('readFile', 'o.mp4');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-    a.download = 'video-deperchas.mp4'; a.click();
-    toast('✓ Video listo');
-    prog.textContent = '';
+    a.download = `video-deperchas.mp4`; a.click();
+    toast('✓ Video listo'); prog.textContent = '';
   } catch (e) { toast('Error de memoria del navegador'); }
   finally { btn.disabled = false; btn.textContent = '🎬 Generar video con música (10s)'; }
 }
