@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Deperchas — Generador de Estados</title>
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -164,6 +165,21 @@ input[type=file]{display:none}
       ⬇ Descargar y copiar caption
     </button>
     <button class="btn-skip" onclick="siguienteCarrusel()">Saltar → siguiente</button>
+    <button class="btn-ig" id="btnIG" onclick="publicarIGStory()" style="width:100%;padding:13px;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;border:none;border-radius:8px;margin-bottom:8px;cursor:pointer;font-weight:500;">Publicar Story en Instagram</button>
+
+    <div class="music-panel" id="musicPanel" style="background:#f9f9f9;padding:12px;border-radius:8px;border:1px solid #ddd;margin-bottom:10px;display:none;">
+      <h4 style="font-size:12px;margin-bottom:8px;color:#333;">🎵 Elegí la música</h4>
+      <div id="musicList" style="display:flex;flex-direction:column;gap:5px;"></div>
+      <div style="margin-top:10px;">
+        <label for="musicUpload" style="font-size:11px;color:var(--accent);cursor:pointer;border:1px dashed var(--accent);padding:4px 8px;border-radius:4px;">📁 Subir MP3 propio</label>
+        <input type="file" id="musicUpload" accept="audio/*" onchange="cargarMusicaPropia(this)" style="display:none;">
+        <span id="musicUploadName" style="font-size:10px;color:gray;margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <div id="videoProgress" style="font-size:11px;color:gray;text-align:center;margin-bottom:5px;"></div>
+    
+    <button class="btn-video" id="btnVideo" onclick="generarVideo()" style="width:100%;padding:12px;background:#f0fafa;color:var(--teal);border:1px solid var(--teal);border-radius:8px;cursor:pointer;font-weight:500;">🎬 Generar video con música (10s)</button>
   </div>
 
 
@@ -527,7 +543,76 @@ function renderResults(){
 
 function wrapText(ctx,text,x,y,maxW,lh){const words=text.split(' ');let line='';for(let i=0;i<words.length;i++){const test=line+words[i]+' ';if(ctx.measureText(test).width>maxW&&i>0){ctx.fillText(line,x,y);line=words[i]+' ';y+=lh;}else line=test;}ctx.fillText(line,x,y);}
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
+// --- LÓGICA DE INSTAGRAM Y VIDEO ---
+const IG_TOKEN = 'EAATAFlLYTikBRa5lHa6YNb26tXLkhQr5UKNYcBECIlYMGoavuVaCpfqTYAD5888xRsp1NnDvl1UqTDXZApd2REZCLsdKaNH1QovWbwZCZAs5wCdWXFDYDVBhJJPNIOl5aUQ4E6ZA6qYsDVJHYs94CImIZCTtORWwYbY1MvrjBsZBSu2MTl8qkuhVLOR6AakfXdxw9MpZCEWgeMydIFUIg6axUq482IjpZCwZDZD';
+const IG_ID = '17841445890441892';
+let ffmpeg = null;
+let selectedMusic = null;
+const musicTracks = [
+  { id:'lofi', name:'Chill Lofi', url:'https://cdn.pixabay.com/audio/2022/05/27/audio_1808f3030e.mp3' },
+  { id:'jazz', name:'Midnight Jazz', url:'https://cdn.pixabay.com/audio/2022/01/26/audio_d0c6ff1101.mp3' }
+];
 
+async function publicarIGStory(){
+  const r = results[carruselIdx]; const btn = document.getElementById('btnIG');
+  btn.disabled = true; btn.textContent = 'Subiendo...';
+  toast('Subiendo a Instagram...');
+  try {
+    const fn = `ig_temp_${Date.now()}.jpg`;
+    const uploadRes = await fetch(`${SUPA_URL}/storage/v1/object/ig-temp/${fn}`, {
+      method:'POST', headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'image/jpeg'}, body:r.blob
+    });
+    
+    if(!uploadRes.ok) throw new Error('Error al subir imagen');
+    
+    const url = `${SUPA_URL}/storage/v1/object/public/ig-temp/${fn}`;
+    const mRes = await fetch(`https://graph.facebook.com/v25.0/${IG_ID}/media`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image_url:url, media_type:'IMAGE', caption:generarCaption(r), access_token:IG_TOKEN})
+    });
+    const mData = await mRes.json();
+    if(!mData.id) throw new Error(mData.error?.message || 'Error API Meta');
+
+    await fetch(`https://graph.facebook.com/v25.0/${IG_ID}/media_publish`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({creation_id:mData.id, access_token:IG_TOKEN})
+    });
+    toast('✓ Story publicada con éxito!'); btn.textContent = '✓ Publicada'; setTimeout(siguienteCarrusel, 1000);
+  } catch(e){ console.error(e); toast('Error al publicar: ' + e.message); btn.disabled = false; btn.textContent = 'Publicar Story en Instagram'; }
+}
+
+async function generarVideo(){
+  if(!selectedMusic){ document.getElementById('musicPanel').style.display='block'; renderMusicList(); return; }
+  const r = results[carruselIdx]; const btn = document.getElementById('btnVideo');
+  const prog = document.getElementById('videoProgress'); btn.disabled = true; btn.textContent = 'Procesando...';
+  try {
+    if(!ffmpeg){ ffmpeg=FFmpeg.createFFmpeg({log:true, corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'}); await ffmpeg.load(); }
+    ffmpeg.FS('writeFile', 'i.jpg', new Uint8Array(await r.blob.arrayBuffer()));
+    prog.textContent = 'Preparando audio...';
+    ffmpeg.FS('writeFile', 'a.mp3', new Uint8Array(await(await fetch(selectedMusic.url)).arrayBuffer()));
+    prog.textContent = 'Renderizando video (10s)...';
+    await ffmpeg.run('-loop','1','-i','i.jpg','-i','a.mp3','-t','10','-pix_fmt','yuv420p','-vf','scale=1080:1920','-c:a','aac','-shortest','o.mp4');
+    const data = ffmpeg.FS('readFile', 'o.mp4');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data.buffer], {type:'video/mp4'}));
+    a.download = `video-deperchas-${Date.now()}.mp4`; a.click();
+    toast('✓ Video descargado'); prog.textContent = '';
+  } catch(e){ console.error(e); toast('Error de memoria al generar video'); } finally { btn.disabled=false; btn.textContent='🎬 Generar video con música (10s)'; }
+}
+
+function renderMusicList(){
+  const l = document.getElementById('musicList'); l.innerHTML='';
+  musicTracks.forEach(t=>{
+    const i=document.createElement('div'); i.style.cssText="padding:8px; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:12px; background:white;";
+    i.textContent=t.name; i.onclick=()=>{selectedMusic=t; toast('Música elegida: '+t.name);}; l.appendChild(i);
+  });
+}
+
+function cargarMusicaPropia(input){
+  const file = input.files[0]; if(!file) return;
+  selectedMusic = { id:'custom', name:file.name, url:URL.createObjectURL(file) };
+  document.getElementById('musicUploadName').textContent = file.name;
+  renderMusicList();
+}
 cargarProductos();
 </script>
 </body>
