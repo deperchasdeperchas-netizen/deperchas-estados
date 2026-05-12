@@ -660,24 +660,16 @@ async function crearVideoReel(r, audioFile) {
         const dataAudio = await resAudio.json();
 
         if (dataImg.public_id && dataAudio.public_id) {
-            // 3. CONSTRUCCIÓN DE IDs CON EXTENSIÓN
-            const audioId = dataAudio.public_id.replace(/\//g, ':') + "." + dataAudio.format;
+           // 3. IDs sin extensión
+            const audioId = dataAudio.public_id.replace(/\//g, ':');
             const imageId = dataImg.public_id.replace(/\//g, ':');
 
-            // 4. URL CON FORZADO DE DESCARGA (fl_attachment)
-            // Agregamos la coma antes de fl_layer_apply y usamos fl_attachment para evitar bloqueos
-            const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_video:${audioId},fl_layer_apply,so_0/fl_attachment/${imageId}.mp4`;
+            // 4. URL correcta sin fl_attachment
+            const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_video:${audioId},fl_layer_apply,so_0/${imageId}.mp4`;
 
-            console.log("URL de descarga forzada:", videoUrl);
-
-            // 5. DISPARAR DESCARGA AUTOMÁTICA
-            const link = document.createElement('a');
-            link.href = videoUrl;
-            link.setAttribute('download', `reel-${r.nombre}.mp4`);
-            link.setAttribute('target', '_blank'); // Abrir en pestaña nueva si falla la descarga directa
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            console.log("URL del video:", videoUrl);
+            window.open(videoUrl, '_blank');
+            toast('✓ Video listo — se abrió en nueva pestaña');
         }
 
     } catch (e) {
