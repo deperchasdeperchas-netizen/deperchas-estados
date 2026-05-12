@@ -512,60 +512,103 @@ async function compartirActual(){
   copiarYAbrirWP();
 }
 
-async function publicarIGStory(){
+// --- FUNCIONES DE DIBUJO (VITALES PARA GENERAR IMÁGENES) ---
+function wrapText(ctx, text, x, y, maxW, lh) {
+  const words = text.split(' ');
+  let line = '';
+  for (let i = 0; i < words.length; i++) {
+    const test = line + words[i] + ' ';
+    if (ctx.measureText(test).width > maxW && i > 0) {
+      ctx.fillText(line, x, y);
+      line = words[i] + ' ';
+      y += lh;
+    } else line = test;
+  }
+  ctx.fillText(line, x, y);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// --- LÓGICA DE INSTAGRAM ---
+async function publicarIGStory() {
   const r = results[carruselIdx];
   const btn = document.getElementById('btnIG');
   btn.disabled = true;
   btn.textContent = 'Subiendo...';
   toast('Subiendo a Instagram...');
-
   try {
     const filename = 'ig_temp_' + Date.now() + '.jpg';
-    
-    // Subida al Bucket ig-temp
     const uploadRes = await fetch(SUPA_URL + '/storage/v1/object/ig-temp/' + filename, {
       method: 'POST',
-      headers: {
-        'apikey': SUPA_KEY,
-        'Authorization': 'Bearer ' + SUPA_KEY,
-        'Content-Type': 'image/jpeg'
-      },
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'image/jpeg' },
       body: r.blob
     });
-
-    if(!uploadRes.ok) throw new Error('Error al subir: Verificá que el bucket "ig-temp" sea público en Supabase');
-
+    if (!uploadRes.ok) throw new Error('Error en Supabase: Revisá el bucket "ig-temp"');
     const publicUrl = SUPA_URL + '/storage/v1/object/public/ig-temp/' + filename;
-
     const mediaRes = await fetch('https://graph.facebook.com/v25.0/' + IG_ID + '/media', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        image_url: publicUrl,
-        media_type: 'IMAGE',
-        caption: generarCaption(r),
-        access_token: IG_TOKEN
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url: publicUrl, media_type: 'IMAGE', caption: generarCaption(r), access_token: IG_TOKEN })
     });
-    
-    const mediaData = await mediaRes.json();
-    if(!mediaData.id) throw new Error(mediaData.error?.message || 'Error API Meta');
-    
+    const mData = await mediaRes.json();
     await fetch('https://graph.facebook.com/v25.0/' + IG_ID + '/media_publish', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ creation_id: mediaData.id, access_token: IG_TOKEN })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ creation_id: mData.id, access_token: IG_TOKEN })
     });
-
     toast('✓ Story publicada!');
     btn.textContent = '✓ Publicada';
     setTimeout(siguienteCarrusel, 1000);
-  } catch(err) {
-    console.error(err);
+  } catch (err) {
     toast(err.message);
     btn.disabled = false;
     btn.textContent = 'Publicar Story en Instagram';
   }
+}
+
+// --- LÓGICA DE VIDEO ---
+async function generarVideo() {
+  const r = results[carruselIdx];
+  if (!selectedMusic) {
+    document.getElementById('musicPanel').classList.add('open');
+    renderMusicList();
+    toast('Elegí la música primero');
+    return;
+  }
+  const btn = document.getElementById('btnVideo');
+  const prog = document.getElementById('videoProgress');
+  btn.disabled = true; btn.textContent = 'Procesando...';
+  prog.textContent = 'Iniciando motor de video...';
+  try {
+    if (!ffmpeg) {
+      ffmpeg = FFmpeg.createFFmpeg({ log: true, corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' });
+      await ffmpeg.load();
+    }
+    ffmpeg.FS('writeFile', 'i.jpg', new Uint8Array(await r.blob.arrayBuffer()));
+    const aRes = await fetch(selectedMusic.url);
+    ffmpeg.FS('writeFile', 'a.mp3', new Uint8Array(await aRes.arrayBuffer()));
+    prog.textContent = 'Renderizando (10s)...';
+    await ffmpeg.run('-loop', '1', '-i', 'i.jpg', '-i', 'a.mp3', '-t', '10', '-c:v', 'libx264', '-vf', 'scale=1080:1920,format=yuv420p', '-c:a', 'aac', '-shortest', 'o.mp4');
+    const data = ffmpeg.FS('readFile', 'o.mp4');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+    a.download = 'video-deperchas.mp4'; a.click();
+    toast('✓ Video listo');
+    prog.textContent = '';
+  } catch (e) { toast('Error de memoria del navegador'); }
+  finally { btn.disabled = false; btn.textContent = '🎬 Generar video con música (10s)'; }
 }
 
 function renderMusicList() {
@@ -589,56 +632,7 @@ function cargarMusicaPropia(input) {
   renderMusicList();
 }
 
-async function generarVideo() {
-  const r = results[carruselIdx];
-  if (!selectedMusic) {
-    document.getElementById('musicPanel').classList.add('open');
-    renderMusicList();
-    toast('Elegí la música primero');
-    return;
-  }
-  const btn = document.getElementById('btnVideo');
-  const prog = document.getElementById('videoProgress');
-  btn.disabled = true; btn.textContent = 'Procesando...';
-  prog.textContent = 'Iniciando motor de video...';
-  
-  try {
-    if (!ffmpeg) {
-      ffmpeg = FFmpeg.createFFmpeg({ 
-        log: true,
-        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
-      });
-      await ffmpeg.load();
-    }
-    
-    ffmpeg.FS('writeFile', 'i.jpg', new Uint8Array(await r.blob.arrayBuffer()));
-    prog.textContent = 'Preparando audio...';
-    const aRes = await fetch(selectedMusic.url);
-    ffmpeg.FS('writeFile', 'a.mp3', new Uint8Array(await aRes.arrayBuffer()));
-    
-    prog.textContent = 'Renderizando Story (10s)...';
-    await ffmpeg.run('-loop','1','-i','i.jpg','-i','a.mp3','-t','10','-c:v','libx264','-vf','scale=1080:1920,format=yuv420p','-c:a','aac','-shortest','o.mp4');
-    
-    const data = ffmpeg.FS('readFile', 'o.mp4');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-    a.download = `video-deperchas.mp4`;
-    a.click();
-    
-    toast('✓ Video listo');
-    prog.textContent = '';
-  } catch (e) {
-    console.error(e);
-    toast('Error: Memoria insuficiente en el navegador');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🎬 Generar video con música (10s)';
-  }
-}
-
 function dlTodas(){ results.forEach((r,i)=>setTimeout(()=>{const a=document.createElement('a');a.href=URL.createObjectURL(r.blob);a.download='dp.jpg';a.click();},i*400)); }
-
-function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 
 cargarProductos();
 </script>
