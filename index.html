@@ -642,28 +642,37 @@ function cargarMusicaPropia(input){
 async function crearVideoReel(r, audioFile) {
     const cloudName = 'danlc50hp';
     const unsignedPreset = 'deperchas_videos';
+
     try {
+        // 1. Subir Imagen
         const formDataImg = new FormData();
         formDataImg.append('file', r.blob);
         formDataImg.append('upload_preset', unsignedPreset);
         const resImg = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formDataImg });
         const dataImg = await resImg.json();
 
+        // 2. Subir Audio
         const formDataAudio = new FormData();
         formDataAudio.append('file', audioFile);
         formDataAudio.append('upload_preset', unsignedPreset);
-        formDataAudio.append('resource_type', 'video');
+        formDataAudio.append('resource_type', 'video'); // Audio se sube como video en Cloudinary
         const resAudio = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, { method: 'POST', body: formDataAudio });
         const dataAudio = await resAudio.json();
 
-        const audioId = dataAudio.public_id.replace(/\//g, ':');
-        const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_audio:${audioId}/fl_layer_apply/${dataImg.public_id}.mp4`;
+        if (dataImg.public_id && dataAudio.public_id) {
+            // 3. Generar la URL de transformación
+            // Nota: 'so_0' asegura que el audio empiece al inicio
+            const audioId = dataAudio.public_id.replace(/\//g, ':');
+            const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_audio:${audioId}/fl_layer_apply/so_0/${dataImg.public_id}.mp4`;
 
-        const a = document.createElement('a');
-        a.href = videoUrl;
-        a.download = `video-${r.nombre}.mp4`;
-        a.click();
-    } catch (e) { console.error("Error:", e); }
+            // 4. Abrir en pestaña nueva. 
+            // Si sale 404, esperá 3 segundos y dale a F5.
+            window.open(videoUrl, '_blank');
+        }
+
+    } catch (e) {
+        console.error("Error en el proceso:", e);
+    }
 }
 
 async function procesarVideosSiHayAudio() {
