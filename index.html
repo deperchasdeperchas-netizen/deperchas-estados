@@ -655,24 +655,29 @@ async function crearVideoReel(r, audioFile) {
         const formDataAudio = new FormData();
         formDataAudio.append('file', audioFile);
         formDataAudio.append('upload_preset', unsignedPreset);
-        formDataAudio.append('resource_type', 'video'); // Audio se sube como resource_type video
+        formDataAudio.append('resource_type', 'video'); 
         const resAudio = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, { method: 'POST', body: formDataAudio });
         const dataAudio = await resAudio.json();
 
         if (dataImg.public_id && dataAudio.public_id) {
-            // 3. GENERAR LA URL DE TRANSFORMACIÓN CON EXTENSIÓN
-            // IMPORTANTE: Agregamos '.' + dataAudio.format para que Cloudinary encuentre el layer
+            // 3. CONSTRUCCIÓN DE IDs CON EXTENSIÓN
             const audioId = dataAudio.public_id.replace(/\//g, ':') + "." + dataAudio.format;
             const imageId = dataImg.public_id.replace(/\//g, ':');
 
-            // URL REFORZADA: Base de audio (para estabilidad) con imagen encima
-            const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_video:${audioId}/fl_layer_apply/so_0/${imageId}.mp4`;
+            // 4. URL CON FORZADO DE DESCARGA (fl_attachment)
+            // Agregamos la coma antes de fl_layer_apply y usamos fl_attachment para evitar bloqueos
+            const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_video:${audioId},fl_layer_apply,so_0/fl_attachment/${imageId}.mp4`;
 
-            console.log("URL de video para DEPERCHAS:", videoUrl);
+            console.log("URL de descarga forzada:", videoUrl);
 
-            // 4. Abrir en pestaña nueva
-            // RECOMENDACIÓN: Si sale 404, esperar 5-10 segundos y dar F5
-            window.open(videoUrl, '_blank');
+            // 5. DISPARAR DESCARGA AUTOMÁTICA
+            const link = document.createElement('a');
+            link.href = videoUrl;
+            link.setAttribute('download', `reel-${r.nombre}.mp4`);
+            link.setAttribute('target', '_blank'); // Abrir en pestaña nueva si falla la descarga directa
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
     } catch (e) {
@@ -683,12 +688,9 @@ async function crearVideoReel(r, audioFile) {
 async function procesarVideosSiHayAudio() {
     const audioInput = document.getElementById('audioInput');
     const audioFile = audioInput ? audioInput.files[0] : null;
-    
     if (!audioFile) return;
 
-    document.getElementById('progTxt').textContent = 'Subiendo archivos y mezclando videos...';
-    
-    // Solo generamos videos para las "Fichas de precio" (las que tienen el diseño final)
+    document.getElementById('progTxt').textContent = 'Preparando descargas de video...';
     const fichas = results.filter(r => r.tipo === 'Ficha precio');
     
     for (const ficha of fichas) { 
@@ -696,13 +698,6 @@ async function procesarVideosSiHayAudio() {
     }
 }
 
-async function procesarVideosSiHayAudio() {
-    const audioFile = document.getElementById('audioInput').files[0];
-    if (!audioFile) return;
-    document.getElementById('progTxt').textContent = 'Generando videos en la nube...';
-    const fichas = results.filter(r => r.tipo === 'Ficha precio');
-    for (const ficha of fichas) { await crearVideoReel(ficha, audioFile); }
-}
 
 cargarProductos();
 </script> 
