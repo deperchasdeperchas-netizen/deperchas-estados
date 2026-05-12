@@ -593,17 +593,19 @@ async function generarVideo(){
     prog.textContent = 'Cargando audio...';
     ffmpeg.FS('writeFile', 'a.mp3', new Uint8Array(await(await fetch(selectedMusic.url)).arrayBuffer()));
     
-    prog.textContent = 'Renderizando video (10s)... No cierres la pestaña';
-    await ffmpeg.run('-loop','1','-framerate','15','-i','i.jpg','-i','a.mp3','-t','10','-c:v','libx264','-tune','stillimage','-pix_fmt','yuv420p','-c:a','aac','-shortest','o.mp4');
+    prog.textContent = 'Renderizando video HD (10s)... No cierres la pestaña';
+    
+    // CAMBIO CLAVE ACÁ: scale=720:1280 en vez de 1080 (Consume muchísima menos RAM)
+    await ffmpeg.run('-loop','1','-framerate','15','-i','i.jpg','-i','a.mp3','-t','10','-c:v','libx264','-tune','stillimage','-pix_fmt','yuv420p','-vf','scale=720:1280','-c:a','aac','-shortest','o.mp4');
     
     const data = ffmpeg.FS('readFile', 'o.mp4');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data.buffer], {type:'video/mp4'}));
     a.download = `video-deperchas-${Date.now()}.mp4`; a.click();
     
-    toast('✓ Video descargado'); prog.textContent = '';
+    toast('✓ Video descargado exitosamente'); prog.textContent = '';
   } catch(e){ 
     console.error(e); 
-    toast('Error de memoria: Recargá la página (F5) e intentá de nuevo'); 
+    toast('Error: El navegador sigue sin soportar el peso del video.'); 
     prog.textContent = 'Falló por falta de RAM en el navegador.';
   } finally { 
     btn.disabled=false; btn.textContent='🎬 Generar video con música (10s)'; 
