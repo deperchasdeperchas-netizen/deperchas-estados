@@ -483,18 +483,13 @@ async function copiarYAbrirWP(){
   try{await navigator.clipboard.writeText(caption);}catch{}
   descargarActual(false);
   if(!wpAbierto){
-    // Intentar abrir app de escritorio primero, sino WhatsApp Web
     const link = document.createElement('a');
     link.href = 'whatsapp://';
     link.click();
-    // Fallback a WhatsApp Web si no abre en 1.5s
-    setTimeout(()=>{
-      window.open('https://web.whatsapp.com','whatsapp_deperchas');
-    }, 1500);
     wpAbierto = true;
     toast('✓ WhatsApp abierto · imagen descargada · caption copiado');
   } else {
-    toast('✓ Imagen descargada · caption copiado — subila al estado');
+    toast('✓ Imagen ' + (carruselIdx+1) + ' descargada · caption copiado');
   }
 }
 
