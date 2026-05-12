@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Deperchas — Generador de Estados</title>
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -76,24 +75,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn-copy-open{width:100%;padding:11px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;border-radius:var(--radius-sm);border:1px solid var(--green);background:#f0fdf4;color:#1a7a3a;cursor:pointer;margin-bottom:8px}
 .btn-copy-open:hover{background:var(--green);color:#fff}
 .btn-dl-car{width:100%;padding:10px;font-size:12px;font-family:'DM Sans',sans-serif;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;margin-bottom:8px}
-.btn-ig{width:100%;padding:13px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:500;border-radius:var(--radius-sm);border:none;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;transition:opacity .15s}
-.btn-ig:hover{opacity:.88}
-.btn-ig:disabled{opacity:.4;cursor:not-allowed}
-.btn-video{width:100%;padding:12px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;border-radius:var(--radius-sm);border:1px solid #6c5ce7;background:#f5f3ff;color:#6c5ce7;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;transition:all .15s}
-.btn-video:hover{background:#6c5ce7;color:#fff}
-.btn-video:disabled{opacity:.4;cursor:not-allowed}
-.music-panel{background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border);padding:12px;margin-bottom:10px;display:none}
-.music-panel.open{display:block}
-.music-panel h4{font-size:12px;font-weight:500;color:var(--text);margin-bottom:8px}
-.music-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
-.music-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .12s;font-size:12px;color:var(--muted)}
-.music-item:hover{border-color:#6c5ce7;color:#6c5ce7}
-.music-item.selected{border-color:#6c5ce7;background:#f5f3ff;color:#6c5ce7;font-weight:500}
-.music-item .genre{font-size:10px;color:var(--muted);margin-left:auto}
-.music-upload{display:flex;align-items:center;gap:8px;margin-top:8px}
-.music-upload label{font-size:12px;color:var(--accent);cursor:pointer;padding:6px 12px;border:1px dashed var(--accent);border-radius:6px;white-space:nowrap}
-.music-upload span{font-size:11px;color:var(--muted)}
-.video-progress{font-size:12px;color:var(--muted);text-align:center;margin-top:6px;min-height:18px}
 .btn-skip{width:100%;padding:9px;font-size:12px;font-family:'DM Sans',sans-serif;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
 
 /* Resultados */
@@ -180,24 +161,7 @@ input[type=file]{display:none}
     <div class="carrusel-caption" id="carruselCaption"></div>
     <button class="btn-wp" onclick="descargarYCopiar()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.998 0C5.372 0 0 5.373 0 12.004c0 2.117.554 4.099 1.522 5.818L.057 23.925l6.266-1.644A11.938 11.938 0 0 0 12 24c6.626 0 12-5.373 12-12.004C24 5.372 18.626 0 11.998 0z"/></svg>
-      ⬇ Descargar para WhatsApp
-    </button>
-    <button class="btn-ig" id="btnIG" onclick="publicarIGStory()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none"/></svg>
-      Publicar Story en Instagram
-    </button>
-    <div class="music-panel" id="musicPanel">
-      <h4>🎵 Elegí la música</h4>
-      <div class="music-list" id="musicList"></div>
-      <div class="music-upload">
-        <label for="musicUpload">📁 Subir MP3 propio</label>
-        <input type="file" id="musicUpload" accept="audio/*" style="display:none" onchange="cargarMusicaPropia(this)">
-        <span id="musicUploadName">ninguno seleccionado</span>
-      </div>
-    </div>
-    <div class="video-progress" id="videoProgress"></div>
-    <button class="btn-video" id="btnVideo" onclick="generarVideo()">
-      🎬 Generar video con música (10s)
+      ⬇ Descargar y copiar caption
     </button>
     <button class="btn-skip" onclick="siguienteCarrusel()">Saltar → siguiente</button>
   </div>
@@ -208,8 +172,6 @@ input[type=file]{display:none}
 <div class="toast" id="toast"></div>
 
 <script>
-const IG_TOKEN = 'EAATAFlLYTikBRa5lHa6YNb26tXLkhQr5UKNYcBECIlYMGoavuVaCpfqTYAD5888xRsp1NnDvl1UqTDXZApd2REZCLsdKaNH1QovWbwZCZAs5wCdWXFDYDVBhJJPNIOl5aUQ4E6ZA6qYsDVJHYs94CImIZCTtORWwYbY1MvrjBsZBSu2MTl8qkuhVLOR6AakfXdxw9MpZCEWgeMydIFUIg6axUq482IjpZCwZDZD';
-const IG_ID = '17841445890441892';
 const SUPA_URL = 'https://eipiqxwycagopumaemrx.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcGlxeHd5Y2Fnb3B1bWFlbXJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTQ0MzksImV4cCI6MjA5MjEzMDQzOX0.E9YM--j0LlN5LZE966n4jKu2jgNXkkvCpeVl6pTpVfk';
 const LINK = 'deperchas.com';
@@ -512,123 +474,63 @@ async function compartirActual(){
   copiarYAbrirWP();
 }
 
-// --- FUNCIONES DE DIBUJO (REINCORPORADAS) ---
-function wrapText(ctx, text, x, y, maxW, lh) {
-  const words = text.split(' ');
-  let line = '';
-  for (let i = 0; i < words.length; i++) {
-    const test = line + words[i] + ' ';
-    if (ctx.measureText(test).width > maxW && i > 0) {
-      ctx.fillText(line, x, y);
-      line = words[i] + ' ';
-      y += lh;
-    } else line = test;
-  }
-  ctx.fillText(line, x, y);
+async function descargarYCopiar(){
+  const r=results[carruselIdx];
+  const caption=generarCaption(r);
+  try{await navigator.clipboard.writeText(caption);}catch{}
+  descargarActual(false);
+  toast('✓ Imagen ' + (carruselIdx+1) + ' de ' + results.length + ' descargada · caption copiado');
 }
 
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-// --- LÓGICA DE INSTAGRAM ---
-async function publicarIGStory(){
-  const r = results[carruselIdx];
-  const btn = document.getElementById('btnIG');
-  btn.disabled = true; btn.textContent = 'Subiendo...';
-  toast('Subiendo a Instagram...');
-  try {
-    const filename = 'ig_temp_' + Date.now() + '.jpg';
-    const uploadRes = await fetch(SUPA_URL + '/storage/v1/object/ig-temp/' + filename, {
-      method: 'POST',
-      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'image/jpeg' },
-      body: r.blob
-    });
-    if(!uploadRes.ok) throw new Error('Error en Supabase: Revisá el bucket "ig-temp"');
-    const publicUrl = SUPA_URL + '/storage/v1/object/public/ig-temp/' + filename;
-    const mediaRes = await fetch('https://graph.facebook.com/v25.0/' + IG_ID + '/media', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ image_url: publicUrl, media_type: 'IMAGE', caption: generarCaption(r), access_token: IG_TOKEN })
-    });
-    const mData = await mediaRes.json();
-    await fetch('https://graph.facebook.com/v25.0/' + IG_ID + '/media_publish', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ creation_id: mData.id, access_token: IG_TOKEN })
-    });
-    toast('✓ Story publicada!');
-    btn.textContent = '✓ Publicada';
-    setTimeout(siguienteCarrusel, 1000);
-  } catch(err) {
-    toast(err.message); btn.disabled = false; btn.textContent = 'Publicar Story en Instagram';
+let wpAbierto = false;
+async function copiarYAbrirWP(){
+  const r=results[carruselIdx];
+  const caption=generarCaption(r);
+  try{await navigator.clipboard.writeText(caption);}catch{}
+  descargarActual(false);
+  if(!wpAbierto){
+    const link = document.createElement('a');
+    link.href = 'whatsapp://';
+    link.click();
+    wpAbierto = true;
+    toast('✓ WhatsApp abierto · imagen descargada · caption copiado');
+  } else {
+    toast('✓ Imagen ' + (carruselIdx+1) + ' descargada · caption copiado');
   }
 }
 
-// --- LÓGICA DE VIDEO ---
-async function generarVideo() {
-  const r = results[carruselIdx];
-  if (!selectedMusic) {
-    document.getElementById('musicPanel').classList.add('open');
-    renderMusicList();
-    toast('Elegí la música primero');
-    return;
-  }
-  const btn = document.getElementById('btnVideo');
-  const prog = document.getElementById('videoProgress');
-  btn.disabled = true; btn.textContent = 'Procesando...';
-  prog.textContent = 'Iniciando motor de video...';
-  try {
-    if (!ffmpeg) {
-      ffmpeg = FFmpeg.createFFmpeg({ log: true, corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' });
-      await ffmpeg.load();
-    }
-    ffmpeg.FS('writeFile', 'i.jpg', new Uint8Array(await r.blob.arrayBuffer()));
-    const aRes = await fetch(selectedMusic.url);
-    ffmpeg.FS('writeFile', 'a.mp3', new Uint8Array(await aRes.arrayBuffer()));
-    prog.textContent = 'Renderizando Story (10s)...';
-    await ffmpeg.run('-loop','1','-i','i.jpg','-i','a.mp3','-t','10','-c:v','libx264','-vf','scale=1080:1920,format=yuv420p','-c:a','aac','-shortest','o.mp4');
-    const data = ffmpeg.FS('readFile', 'o.mp4');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-    a.download = `video-deperchas.mp4`; a.click();
-    toast('✓ Video listo'); prog.textContent = '';
-  } catch (e) { toast('Error de memoria del navegador'); }
-  finally { btn.disabled = false; btn.textContent = '🎬 Generar video con música (10s)'; }
+function descargarActual(avanzar=true){
+  const r=results[carruselIdx];
+  const fname=(r.nombre||'prenda').toLowerCase().replace(/[^a-z0-9]/gi,'-');
+  const a=document.createElement('a');a.href=URL.createObjectURL(r.blob);a.download='deperchas-'+fname+(r.tipo==='Ficha precio'?'-ficha':'')+'.jpg';a.click();
+  if(avanzar) setTimeout(()=>siguienteCarrusel(),400);
 }
 
-function renderMusicList() {
-  const list = document.getElementById('musicList');
-  if(!list) return;
-  list.innerHTML = '';
-  musicTracks.forEach(t => {
-    const item = document.createElement('div');
-    item.className = 'music-item' + (selectedMusic?.id === t.id ? ' selected' : '');
-    item.innerHTML = `<span>${t.name}</span>`;
-    item.onclick = () => { selectedMusic = t; renderMusicList(); toast(`Elegido: ${t.name}`); };
-    list.appendChild(item);
+function dlTodas(){ results.forEach((r,i)=>setTimeout(()=>{const fname=(r.nombre||'prenda').toLowerCase().replace(/[^a-z0-9]/gi,'-');const a=document.createElement('a');a.href=URL.createObjectURL(r.blob);a.download='deperchas-'+fname+(r.tipo==='Ficha precio'?'-ficha':'')+'.jpg';a.click();},i*400)); }
+
+function renderResults(){
+  const panel=document.getElementById('resultsPanel'),grid=document.getElementById('resultsGrid');
+  if(!results.length){panel.style.display='none';return;}
+  panel.style.display='';grid.innerHTML='';
+  results.forEach((r,i)=>{
+    const card=document.createElement('div');card.className='res-card';
+    const img=document.createElement('img');img.src=r.src;img.crossOrigin='anonymous';card.appendChild(img);
+    const body=document.createElement('div');body.className='res-card-body';
+    body.innerHTML='<div class="res-card-name">'+r.nombre+'</div><div class="res-card-type">'+r.tipo+'</div>';
+    const actions=document.createElement('div');actions.className='res-actions';
+    const btnDl=document.createElement('button');btnDl.className='btn-dl-r';btnDl.textContent='⬇';btnDl.onclick=()=>{const fname=(r.nombre||'').toLowerCase().replace(/[^a-z0-9]/gi,'-');const a=document.createElement('a');a.href=URL.createObjectURL(r.blob);a.download='deperchas-'+fname+'.jpg';a.click();};
+    const btnSh=document.createElement('button');btnSh.className='btn-sh-r';btnSh.textContent='↗';btnSh.onclick=()=>{carruselIdx=i;mostrarCarrusel();document.getElementById('carruselPanel').scrollIntoView({behavior:'smooth',block:'start'}); };
+    actions.appendChild(btnDl);actions.appendChild(btnSh);body.appendChild(actions);card.appendChild(body);grid.appendChild(card);
   });
+  panel.scrollIntoView({behavior:'smooth'});
 }
 
-function cargarMusicaPropia(input) {
-  const file = input.files[0];
-  if (!file) return;
-  selectedMusic = { id: 'custom', name: file.name, url: URL.createObjectURL(file) };
-  document.getElementById('musicUploadName').textContent = file.name;
-  renderMusicList();
-}
-
-function dlTodas(){ results.forEach((r,i)=>setTimeout(()=>{const a=document.createElement('a');a.href=URL.createObjectURL(r.blob);a.download='dp.jpg';a.click();},i*400)); }
+function wrapText(ctx,text,x,y,maxW,lh){const words=text.split(' ');let line='';for(let i=0;i<words.length;i++){const test=line+words[i]+' ';if(ctx.measureText(test).width>maxW&&i>0){ctx.fillText(line,x,y);line=words[i]+' ';y+=lh;}else line=test;}ctx.fillText(line,x,y);}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 
 cargarProductos();
 </script>
 </body>
 </html>
+
+
