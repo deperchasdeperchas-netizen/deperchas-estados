@@ -593,10 +593,24 @@ async function generarVideo(){
     prog.textContent = 'Cargando audio...';
     ffmpeg.FS('writeFile', 'a.mp3', new Uint8Array(await(await fetch(selectedMusic.url)).arrayBuffer()));
     
-    prog.textContent = 'Renderizando video HD (10s)... No cierres la pestaña';
+    prog.textContent = 'Renderizando video ULTRA LIGERO (10s)...';
     
-    // CAMBIO CLAVE ACÁ: scale=720:1280 en vez de 1080 (Consume muchísima menos RAM)
-    await ffmpeg.run('-loop','1','-framerate','15','-i','i.jpg','-i','a.mp3','-t','10','-c:v','libx264','-tune','stillimage','-pix_fmt','yuv420p','-vf','scale=720:1280','-c:a','aac','-shortest','o.mp4');
+    // COMANDO DE SUPERVIVENCIA: 1 fps, ultrafast, mitad de resolución
+    await ffmpeg.run(
+      '-loop', '1', 
+      '-framerate', '1', 
+      '-i', 'i.jpg', 
+      '-i', 'a.mp3', 
+      '-t', '10', 
+      '-c:v', 'libx264', 
+      '-preset', 'ultrafast', 
+      '-tune', 'stillimage', 
+      '-pix_fmt', 'yuv420p', 
+      '-vf', 'scale=540:960', 
+      '-c:a', 'aac', 
+      '-shortest', 
+      'o.mp4'
+    );
     
     const data = ffmpeg.FS('readFile', 'o.mp4');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data.buffer], {type:'video/mp4'}));
@@ -605,8 +619,8 @@ async function generarVideo(){
     toast('✓ Video descargado exitosamente'); prog.textContent = '';
   } catch(e){ 
     console.error(e); 
-    toast('Error: El navegador sigue sin soportar el peso del video.'); 
-    prog.textContent = 'Falló por falta de RAM en el navegador.';
+    toast('Error: Tu dispositivo/navegador restringe la memoria estrictamente.'); 
+    prog.textContent = 'Falló por límite de RAM del navegador.';
   } finally { 
     btn.disabled=false; btn.textContent='🎬 Generar video con música (10s)'; 
   }
