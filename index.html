@@ -638,7 +638,7 @@ function cargarMusicaPropia(input){
   renderMusicList();
 }
 
-// 1. PEGA LAS FUNCIONES NUEVAS ACÁ (antes de cargarProductos)
+// 1. FUNCIONES PARA GENERACIÓN DE VIDEOS EN CLOUDINARY
 async function crearVideoReel(r, audioFile) {
     const cloudName = 'danlc50hp';
     const unsignedPreset = 'deperchas_videos';
@@ -655,23 +655,44 @@ async function crearVideoReel(r, audioFile) {
         const formDataAudio = new FormData();
         formDataAudio.append('file', audioFile);
         formDataAudio.append('upload_preset', unsignedPreset);
-        formDataAudio.append('resource_type', 'video'); // Audio se sube como video en Cloudinary
+        formDataAudio.append('resource_type', 'video'); // Audio se sube como resource_type video
         const resAudio = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, { method: 'POST', body: formDataAudio });
         const dataAudio = await resAudio.json();
 
         if (dataImg.public_id && dataAudio.public_id) {
-            // 3. Generar la URL de transformación
-            // Nota: 'so_0' asegura que el audio empiece al inicio
-            const audioId = dataAudio.public_id.replace(/\//g, ':');
-            const videoUrl =`https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_video:${audioId}/fl_layer_apply/so_0/${dataImg.public_id}.mp4`;
+            // 3. GENERAR LA URL DE TRANSFORMACIÓN CON EXTENSIÓN
+            // IMPORTANTE: Agregamos '.' + dataAudio.format para que Cloudinary encuentre el layer
+            const audioId = dataAudio.public_id.replace(/\//g, ':') + "." + dataAudio.format;
+            const imageId = dataImg.public_id.replace(/\//g, ':');
 
-            // 4. Abrir en pestaña nueva. 
-            // Si sale 404, esperá 3 segundos y dale a F5.
+            // URL REFORZADA: Base de audio (para estabilidad) con imagen encima
+            const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_video:${audioId}/fl_layer_apply/so_0/${imageId}.mp4`;
+
+            console.log("URL de video para DEPERCHAS:", videoUrl);
+
+            // 4. Abrir en pestaña nueva
+            // RECOMENDACIÓN: Si sale 404, esperar 5-10 segundos y dar F5
             window.open(videoUrl, '_blank');
         }
 
     } catch (e) {
-        console.error("Error en el proceso:", e);
+        console.error("Error en el proceso de Cloudinary:", e);
+    }
+}
+
+async function procesarVideosSiHayAudio() {
+    const audioInput = document.getElementById('audioInput');
+    const audioFile = audioInput ? audioInput.files[0] : null;
+    
+    if (!audioFile) return;
+
+    document.getElementById('progTxt').textContent = 'Subiendo archivos y mezclando videos...';
+    
+    // Solo generamos videos para las "Fichas de precio" (las que tienen el diseño final)
+    const fichas = results.filter(r => r.tipo === 'Ficha precio');
+    
+    for (const ficha of fichas) { 
+        await crearVideoReel(ficha, audioFile); 
     }
 }
 
