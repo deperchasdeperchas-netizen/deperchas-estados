@@ -76,6 +76,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .toggle-switch input:checked+.toggle-slider{background:var(--pinterest)}
 .toggle-switch input:checked+.toggle-slider:before{transform:translateX(20px)}
 
+/* Nombres editables */
+.nombres-panel{margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem}
+.nombres-panel h3{font-size:13px;font-weight:500;color:var(--muted);margin-bottom:.75rem}
+.nombre-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.nombre-row img{width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;background:var(--border)}
+.nombre-input{flex:1;padding:7px 10px;font-size:13px;font-family:"DM Sans",sans-serif;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
+.nombre-input:focus{border-color:var(--accent)}
+.nombre-input.editado{border-color:var(--teal);background:#f0fafa}
+
 /* Progress */
 .progress-bar{background:var(--border);border-radius:4px;height:6px;margin:12px 0}
 .progress-fill{background:var(--accent);height:6px;border-radius:4px;transition:width .3s;width:0}
@@ -187,6 +196,12 @@ input[type=file]{display:none}
         <span class="toggle-slider"></span>
       </div>
     </label>
+
+    <!-- Nombres editables -->
+    <div class="nombres-panel" id="nombresPanel">
+      <h3>✏️ Revisá los nombres antes de generar</h3>
+      <div id="nombresLista"></div>
+    </div>
 
     <div class="progress-bar" id="progBar" style="display:none"><div class="progress-fill" id="progFill"></div></div>
     <p class="progress-txt" id="progTxt"></p>
@@ -340,17 +355,45 @@ function updateSelBar(){
 function mostrarPanelGenerar(){
   const panel = document.getElementById('panelGenerar');
   panel.style.display='';
+
+  // Badges
   const bp = document.getElementById('badgesPanel'); bp.innerHTML='';
   BADGE_OPTS.forEach(b=>{
     const tag=document.createElement('span'); tag.className='badge-opt'+(activeBadges.includes(b)?' active':'');
     tag.textContent=b; tag.onclick=()=>{if(activeBadges.includes(b))activeBadges=activeBadges.filter(x=>x!==b);else activeBadges.push(b);tag.classList.toggle('active',activeBadges.includes(b));};
     bp.appendChild(tag);
   });
+
+  // Nombres editables
+  const lista = document.getElementById('nombresLista'); lista.innerHTML='';
+  Object.values(selected).forEach(p=>{
+    const imgs=[p.image,p.image2,p.image3,p.image4,p.image5,p.image6,p.image7].filter(Boolean);
+    const row = document.createElement('div'); row.className='nombre-row';
+    const img = document.createElement('img');
+    img.src = imgs[0] || ''; img.alt='';
+    const input = document.createElement('input');
+    input.type='text'; input.className='nombre-input';
+    input.value = p.name || ''; input.dataset.id = p.id;
+    input.placeholder='Nombre del producto';
+    input.oninput=()=>{
+      input.classList.toggle('editado', input.value.trim() !== (p.name||'').trim());
+    };
+    row.appendChild(img); row.appendChild(input);
+    lista.appendChild(row);
+  });
+
   panel.scrollIntoView({behavior:'smooth'});
 }
 
 // GENERAR
 async function generarTodas(){
+  // Leer nombres editados desde los inputs
+  document.querySelectorAll('.nombre-input').forEach(input=>{
+    const id = parseInt(input.dataset.id);
+    const nuevoNombre = input.value.trim();
+    if(nuevoNombre && selected[id]) selected[id].name = nuevoNombre;
+  });
+
   const prods = Object.values(selected);
   if(!prods.length) return;
   results=[];
