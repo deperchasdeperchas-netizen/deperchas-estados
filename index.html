@@ -63,7 +63,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .badge-opt.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light);font-weight:500}
 
 /* Toggle Pinterest */
-.pinterest-toggle{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff5f5;border:1px solid #ffd0d5;border-radius:var(--radius-sm);margin-top:1rem;cursor:pointer}
+.pinterest-toggle{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff5f5;border:1px solid #ffd0d5;border-radius:var(--radius-sm);margin-top:1rem;cursor:pointer;user-select:none}
 .pi-icon{width:28px;height:28px;background:var(--pinterest);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .pi-icon svg{width:15px;height:15px;fill:#fff}
 .pi-texts{flex:1}
@@ -71,7 +71,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .pi-desc{font-size:11px;color:#999;margin-top:2px}
 .toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0}
 .toggle-switch input{opacity:0;width:0;height:0;position:absolute}
-.toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ddd;border-radius:24px;transition:.3s}
+.toggle-slider{position:absolute;top:0;left:0;right:0;bottom:0;background:#ddd;border-radius:24px;transition:.3s;pointer-events:none}
 .toggle-slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .toggle-switch input:checked+.toggle-slider{background:var(--pinterest)}
 .toggle-switch input:checked+.toggle-slider:before{transform:translateX(20px)}
@@ -140,6 +140,15 @@ input[type=file]{display:none}
 
 <div class="app">
 
+  <!-- Barra selección sticky (fuera del panel para que el sticky funcione) -->
+  <div class="sel-bar" id="selBar">
+    <span id="selCount">0 seleccionados</span>
+    <div class="sel-bar-actions">
+      <button class="btn-desel" onclick="deselAll()">Limpiar</button>
+      <button class="btn-generar" onclick="mostrarPanelGenerar()">Generar imágenes →</button>
+    </div>
+  </div>
+
   <!-- Panel productos -->
   <div class="panel">
     <h2>Productos del catálogo</h2>
@@ -150,13 +159,6 @@ input[type=file]{display:none}
       <button class="btn-reload" onclick="cargarProductos()">↺ Actualizar</button>
     </div>
     <div id="catFilters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem"></div>
-    <div class="sel-bar" id="selBar">
-      <span id="selCount">0 seleccionados</span>
-      <div class="sel-bar-actions">
-        <button class="btn-desel" onclick="deselAll()">Limpiar</button>
-        <button class="btn-generar" onclick="mostrarPanelGenerar()">Generar imágenes →</button>
-      </div>
-    </div>
     <div id="productsWrap"><div class="loading">Cargando productos...</div></div>
   </div>
 
@@ -167,7 +169,7 @@ input[type=file]{display:none}
     <div class="badges-panel" id="badgesPanel"></div>
 
     <!-- Toggle Pinterest -->
-    <div class="pinterest-toggle" onclick="document.getElementById('togglePinterest').click()">
+    <label class="pinterest-toggle" for="togglePinterest">
       <div class="pi-icon">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
       </div>
@@ -175,11 +177,11 @@ input[type=file]{display:none}
         <div class="pi-label">Generar versión Pinterest</div>
         <div class="pi-desc">Imagen limpia sin precio, con link a deperchas.com</div>
       </div>
-      <div class="toggle-switch" onclick="event.stopPropagation()">
+      <div class="toggle-switch">
         <input type="checkbox" id="togglePinterest" onchange="generarPinterest=this.checked">
         <span class="toggle-slider"></span>
       </div>
-    </div>
+    </label>
 
     <div class="progress-bar" id="progBar" style="display:none"><div class="progress-fill" id="progFill"></div></div>
     <p class="progress-txt" id="progTxt"></p>
