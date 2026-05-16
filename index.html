@@ -102,6 +102,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn-copy-open:hover{background:var(--green);color:#fff}
 .btn-dl-car{width:100%;padding:10px;font-size:12px;font-family:'DM Sans',sans-serif;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;margin-bottom:8px}
 .btn-skip{width:100%;padding:9px;font-size:12px;font-family:'DM Sans',sans-serif;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
+.btn-publicado{width:100%;padding:12px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;border-radius:var(--radius-sm);border:none;background:#1a7a3a;color:#fff;cursor:pointer;margin-bottom:8px;transition:opacity .2s}
+.btn-publicado:hover{opacity:.85}
+.btn-publicado:disabled{opacity:.5;cursor:default}
+.prod-publicado{position:absolute;top:6px;left:6px;background:rgba(26,122,58,0.9);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px}
 
 /* Resultados */
 .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:1rem}
@@ -156,6 +160,7 @@ input[type=file]{display:none}
       <input class="filter-input" id="searchInput" placeholder="Buscar prenda..." oninput="filtrarProductos()">
       <span class="filter-tag active" data-cat="todos" onclick="setCat(this,'todos')">Todos</span>
       <span class="filter-tag" data-cat="publicar_ahora" onclick="setCat(this,'publicar_ahora')">⚡ Publicar ahora</span>
+      <span class="filter-tag" data-cat="publicados" onclick="setCat(this,'publicados')">✓ Publicados</span>
       <button class="btn-reload" onclick="cargarProductos()">↺ Actualizar</button>
     </div>
     <div id="catFilters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem"></div>
@@ -215,6 +220,7 @@ input[type=file]{display:none}
       <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.998 0C5.372 0 0 5.373 0 12.004c0 2.117.554 4.099 1.522 5.818L.057 23.925l6.266-1.644A11.938 11.938 0 0 0 12 24c6.626 0 12-5.373 12-12.004C24 5.372 18.626 0 11.998 0z"/></svg>
       ⬇ Descargar y copiar caption
     </button>
+    <button class="btn-publicado" id="btnPublicado" onclick="marcarPublicado()">✓ Marcar como publicado y siguiente</button>
     <button class="btn-skip" onclick="siguienteCarrusel()">Saltar → siguiente</button>
   </div>
 
@@ -283,7 +289,7 @@ function filtrarProductos(){
   const q = document.getElementById('searchInput').value.toLowerCase();
   filtered = allProducts.filter(p=>{
     const matchSearch = !q || (p.name||'').toLowerCase().includes(q) || (p.category||'').toLowerCase().includes(q);
-    const matchCat = activeCatFilter==='todos' ? true : activeCatFilter==='publicar_ahora' ? p.publicar_ahora : p.category===activeCatFilter;
+    const matchCat = activeCatFilter==='todos' ? true : activeCatFilter==='publicar_ahora' ? p.publicar_ahora : activeCatFilter==='publicados' ? p.is_published_ig : p.category===activeCatFilter;
     return matchSearch && matchCat;
   });
   renderProductos();
@@ -299,6 +305,7 @@ function renderProductos(){
     card.className = 'prod-card' + (selected[p.id]?' selected':'');
     card.onclick = ()=>toggleSelect(p, card);
     if(p.publicar_ahora){ const badge=document.createElement('div'); badge.className='prod-ahora'; badge.textContent='⚡ HOY'; card.appendChild(badge); }
+    if(p.is_published_ig){ const pub=document.createElement('div'); pub.className='prod-publicado'; pub.textContent='✓ publicado'; card.appendChild(pub); }
     const check = document.createElement('div'); check.className='prod-card-check'; check.textContent='✓'; card.appendChild(check);
     if(imgs[0]){ const img=document.createElement('img'); img.src=imgs[0]; img.alt=p.name; img.loading='lazy'; card.appendChild(img); }
     else { const ph=document.createElement('div'); ph.style.cssText='width:100%;aspect-ratio:1;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:24px'; ph.textContent='🛍'; card.appendChild(ph); }
@@ -618,12 +625,48 @@ function generarCaption(r){
 
 function siguienteCarrusel(){ carruselIdx++; mostrarCarrusel(); }
 
+async function marcarPublicado(){
+  const r = results[carruselIdx];
+  const p = r.product;
+  if(!p || !p.id) { siguienteCarrusel(); return; }
+
+  const btn = document.getElementById('btnPublicado');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  try {
+    const res = await fetch(SUPA_URL + '/rest/v1/products?id=eq.' + p.id, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ is_published_ig: true })
+    });
+    if(res.ok){
+      // Actualizar el dato local también
+      p.is_published_ig = true;
+      const idx = allProducts.findIndex(x => x.id === p.id);
+      if(idx > -1) allProducts[idx].is_published_ig = true;
+      toast('✓ Marcado como publicado');
+    } else {
+      toast('Error al guardar en Supabase');
+    }
+  } catch(e){
+    toast('Error de conexión');
+  }
+
+  setTimeout(() => siguienteCarrusel(), 600);
+}
+
 async function compartirActual(){
   const r=results[carruselIdx];
   const esMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if(esMobile && navigator.share){
     const file=new File([r.blob],'deperchas.jpg',{type:'image/jpeg'});
-    try{await navigator.share({files:[file],title:r.nombre,text:generarCaption(r)});setTimeout(()=>siguienteCarrusel(),800);return;}
+    try{await navigator.share({files:[file],title:r.nombre,text:document.getElementById('carruselCaption').value});setTimeout(()=>siguienteCarrusel(),800);return;}
     catch(e){if(e.name==='AbortError')return;}
   }
   copiarYAbrirWP();
@@ -640,7 +683,7 @@ async function descargarYCopiar(){
 let wpAbierto = false;
 async function copiarYAbrirWP(){
   const r=results[carruselIdx];
-  const caption=generarCaption(r);
+  const caption=document.getElementById('carruselCaption').value;
   try{await navigator.clipboard.writeText(caption);}catch{}
   descargarActual(false);
   if(!wpAbierto){
