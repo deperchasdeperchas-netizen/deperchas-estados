@@ -90,7 +90,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .carrusel-nombre{font-family:'Playfair Display',serif;font-style:italic;font-size:17px;color:var(--text);margin-bottom:4px}
 .carrusel-tipo{font-size:11px;color:var(--muted);margin-bottom:.75rem}
 .carrusel-tipo.tipo-pinterest{color:var(--pinterest)}
-.carrusel-caption{font-size:12px;color:var(--muted);background:var(--bg);border-radius:var(--radius-sm);padding:10px;margin-bottom:1rem;line-height:1.6;white-space:pre-line}
+.carrusel-caption{font-size:12px;color:var(--text);background:var(--bg);border-radius:var(--radius-sm);padding:10px;margin-bottom:1rem;line-height:1.6;width:100%;border:1.5px solid var(--border);font-family:'DM Sans',sans-serif;resize:vertical;outline:none;transition:border-color .2s}.carrusel-caption:focus{border-color:var(--accent)}
 .cp-dots{display:flex;gap:4px;margin-bottom:1rem}
 .cp-dot{height:4px;flex:1;border-radius:2px;background:var(--border);transition:background .2s}
 .cp-dot.done{background:var(--teal)}
@@ -210,7 +210,7 @@ input[type=file]{display:none}
     <img class="carrusel-img" id="carruselImg" src="" alt="">
     <div class="carrusel-nombre" id="carruselNombre"></div>
     <div class="carrusel-tipo" id="carruselTipo"></div>
-    <div class="carrusel-caption" id="carruselCaption"></div>
+    <textarea class="carrusel-caption" id="carruselCaption" rows="5"></textarea>
     <button class="btn-wp" onclick="descargarYCopiar()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.998 0C5.372 0 0 5.373 0 12.004c0 2.117.554 4.099 1.522 5.818L.057 23.925l6.266-1.644A11.938 11.938 0 0 0 12 24c6.626 0 12-5.373 12-12.004C24 5.372 18.626 0 11.998 0z"/></svg>
       ⬇ Descargar y copiar caption
@@ -581,7 +581,7 @@ function mostrarCarrusel(){
     tipoEl.textContent=r.tipo==='Ficha precio'?'📋 Ficha con precio y descuentos':'🖼 Lookbook';
     tipoEl.className='carrusel-tipo';
   }
-  document.getElementById('carruselCaption').textContent=generarCaption(r);
+  document.getElementById('carruselCaption').value=generarCaption(r);
   document.getElementById('carruselImg').src=URL.createObjectURL(r.blob);
   const dots=document.getElementById('cpDots'); dots.innerHTML='';
   results.forEach((res,i)=>{
@@ -631,7 +631,7 @@ async function compartirActual(){
 
 async function descargarYCopiar(){
   const r=results[carruselIdx];
-  const caption=generarCaption(r);
+  const caption=document.getElementById('carruselCaption').value;
   try{await navigator.clipboard.writeText(caption);}catch{}
   descargarActual(false);
   toast('✓ Imagen ' + (carruselIdx+1) + ' de ' + results.length + ' descargada · caption copiado');
