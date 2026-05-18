@@ -137,6 +137,26 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn-car-start{width:100%;padding:11px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;border-radius:var(--radius-sm);border:1px solid var(--teal);background:#f0fafa;color:var(--teal);cursor:pointer;margin-bottom:.75rem}
 .btn-car-start:hover{background:var(--teal);color:#fff}
 
+/* Modal preview */
+.modal-overlay{position:fixed;inset:0;background:rgba(20,16,13,0.75);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--surface);border-radius:var(--radius);max-width:480px;width:100%;max-height:90vh;overflow-y:auto;position:relative}
+.modal-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.15);border:none;cursor:pointer;font-size:16px;color:#fff;display:flex;align-items:center;justify-content:center;z-index:10}
+.modal-close:hover{background:rgba(0,0,0,0.35)}
+.modal-imgs{display:flex;gap:4px;overflow-x:auto;padding:4px}
+.modal-imgs img{height:180px;width:auto;flex-shrink:0;border-radius:6px;object-fit:cover;cursor:pointer;border:2px solid transparent;transition:border-color .15s}
+.modal-imgs img.activa{border-color:var(--accent)}
+.modal-preview-img{width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:var(--border)}
+.modal-info{padding:1rem 1.25rem}
+.modal-nombre{font-family:"Playfair Display",serif;font-style:italic;font-size:18px;margin-bottom:4px}
+.modal-cat{font-size:11px;color:var(--muted);margin-bottom:.5rem}
+.modal-precio{font-size:15px;color:var(--accent);font-weight:500;margin-bottom:1rem}
+.modal-acciones{display:flex;gap:8px;padding:0 1.25rem 1.25rem}
+.btn-modal-sel{flex:1;padding:11px;font-size:13px;font-family:"DM Sans",sans-serif;font-weight:500;border-radius:var(--radius-sm);border:none;background:var(--accent);color:#fff;cursor:pointer}
+.btn-modal-sel.desel{background:#e8e4de;color:var(--muted)}
+.btn-modal-sel:hover{opacity:.88}
+.btn-modal-cerrar{padding:11px 16px;font-size:13px;font-family:"DM Sans",sans-serif;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
+
 .loading{text-align:center;padding:3rem;color:var(--muted);font-size:14px}
 .empty{text-align:center;padding:3rem;color:var(--muted);font-size:13px}
 input[type=file]{display:none}
@@ -239,6 +259,24 @@ input[type=file]{display:none}
     <button class="btn-skip" onclick="siguienteCarrusel()">Saltar → siguiente</button>
   </div>
 
+<!-- Modal preview -->
+<div class="modal-overlay" id="modalOverlay" onclick="cerrarModal(event)">
+  <div class="modal-box" id="modalBox">
+    <button class="modal-close" onclick="cerrarModal(null,true)">✕</button>
+    <img class="modal-preview-img" id="modalImg" src="" alt="">
+    <div class="modal-imgs" id="modalImgs"></div>
+    <div class="modal-info">
+      <div class="modal-nombre" id="modalNombre"></div>
+      <div class="modal-cat" id="modalCat"></div>
+      <div class="modal-precio" id="modalPrecio"></div>
+    </div>
+    <div class="modal-acciones">
+      <button class="btn-modal-sel" id="btnModalSel" onclick="toggleDesdeModal()"></button>
+      <button class="btn-modal-cerrar" onclick="cerrarModal(null,true)">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -318,7 +356,7 @@ function renderProductos(){
     const imgs = [p.image,p.image2,p.image3,p.image4,p.image5,p.image6,p.image7].filter(Boolean);
     const card = document.createElement('div');
     card.className = 'prod-card' + (selected[p.id]?' selected':'');
-    card.onclick = ()=>toggleSelect(p, card);
+    card.onclick = ()=>abrirModal(p);
     if(p.publicar_ahora){ const badge=document.createElement('div'); badge.className='prod-ahora'; badge.textContent='⚡ HOY'; card.appendChild(badge); }
     if(p.is_published_ig){ const pub=document.createElement('div'); pub.className='prod-publicado'; pub.textContent='✓ publicado'; card.appendChild(pub); }
     const check = document.createElement('div'); check.className='prod-card-check'; check.textContent='✓'; card.appendChild(check);
@@ -902,6 +940,81 @@ async function crearVideoReel(r, audioFile) {
 
 async function procesarVideosSiHayAudio() {
   return; // Función reservada para uso futuro
+}
+
+// MODAL PREVIEW
+let modalProducto = null;
+
+function abrirModal(p){
+  modalProducto = p;
+  const imgs = [p.image,p.image2,p.image3,p.image4,p.image5,p.image6,p.image7].filter(Boolean);
+
+  // Imagen principal
+  const mainImg = document.getElementById('modalImg');
+  mainImg.src = imgs[0] || '';
+
+  // Tira de imágenes si hay más de una
+  const imgsEl = document.getElementById('modalImgs');
+  imgsEl.innerHTML = '';
+  if(imgs.length > 1){
+    imgs.forEach((src,i)=>{
+      const img = document.createElement('img');
+      img.src = src;
+      img.className = i===0 ? 'activa' : '';
+      img.onclick = ()=>{
+        mainImg.src = src;
+        imgsEl.querySelectorAll('img').forEach(x=>x.classList.remove('activa'));
+        img.classList.add('activa');
+      };
+      imgsEl.appendChild(img);
+    });
+    imgsEl.style.display = 'flex';
+  } else {
+    imgsEl.style.display = 'none';
+  }
+
+  // Info
+  document.getElementById('modalNombre').textContent = p.name || 'Sin nombre';
+  document.getElementById('modalCat').textContent = [p.category, p.subcategory].filter(Boolean).join(' · ');
+  document.getElementById('modalPrecio').textContent = p.price ? fmt(parseFloat(p.price)) : '';
+
+  // Botón seleccionar
+  actualizarBtnModal();
+
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function actualizarBtnModal(){
+  const btn = document.getElementById('btnModalSel');
+  const esSel = !!selected[modalProducto?.id];
+  btn.textContent = esSel ? '✓ Seleccionada — quitar' : '+ Seleccionar para generar';
+  btn.className = 'btn-modal-sel' + (esSel ? ' desel' : '');
+}
+
+function toggleDesdeModal(){
+  if(!modalProducto) return;
+  if(selected[modalProducto.id]){
+    delete selected[modalProducto.id];
+  } else {
+    selected[modalProducto.id] = modalProducto;
+  }
+  actualizarBtnModal();
+  // Actualizar la card en el grid también
+  document.querySelectorAll('.prod-card').forEach(card=>{
+    const esSel = !!selected[modalProducto.id];
+    // buscar por posicion en filtered
+  });
+  renderProductos();
+  updateSelBar();
+}
+
+function cerrarModal(e, forzar=false){
+  if(forzar || (e && e.target === document.getElementById('modalOverlay'))){
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+    modalProducto = null;
+  }
 }
 
 cargarProductos();
