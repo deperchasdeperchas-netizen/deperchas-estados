@@ -136,6 +136,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn-dl-pinterest:hover{background:var(--pinterest);color:#fff}
 .btn-car-start{width:100%;padding:11px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;border-radius:var(--radius-sm);border:1px solid var(--teal);background:#f0fafa;color:var(--teal);cursor:pointer;margin-bottom:.75rem}
 .btn-car-start:hover{background:var(--teal);color:#fff}
+.btn-catalogo{width:100%;padding:11px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);cursor:pointer;margin-bottom:.5rem}
+.btn-catalogo:hover{background:var(--accent);color:#fff}
+.btn-catalogo:disabled{opacity:.5;cursor:default}
+.btn-car-start:hover{background:var(--teal);color:#fff}
 
 /* Modal preview */
 .modal-overlay{position:fixed;inset:0;background:rgba(20,16,13,0.75);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem}
@@ -233,6 +237,7 @@ input[type=file]{display:none}
     <h2>✓ Imágenes listas</h2>
     <button class="btn-car-start" onclick="iniciarCarrusel()">📲 Modo envío uno por uno</button>
     <button class="btn-dl-all" onclick="dlTodas()">⬇ Descargar todas</button>
+    <button class="btn-catalogo" id="btnCatalogo" onclick="genCatalogo()">📋 Generar catálogo grilla</button>
     <button class="btn-dl-pinterest" id="btnDlPinterest" onclick="dlSoloPinterest()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:inline;vertical-align:middle;margin-right:6px"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
       ⬇ Descargar solo versiones Pinterest
@@ -862,6 +867,180 @@ function renderResults(){
     actions.appendChild(btnDl);actions.appendChild(btnSh);body.appendChild(actions);card.appendChild(body);grid.appendChild(card);
   });
   panel.scrollIntoView({behavior:'smooth'});
+}
+
+// CATÁLOGO GRILLA
+async function genCatalogo(){
+  const btn = document.getElementById('btnCatalogo');
+  btn.disabled = true;
+  btn.textContent = 'Generando catálogo...';
+
+  // Tomar solo lookbooks (primera imagen de cada producto, no fichas ni pinterest)
+  const lookbooks = results.filter(r => r.tipo === 'Lookbook' || (results.filter(x=>x.product.id===r.product.id).indexOf(r)===0 && r.tipo !== 'Pinterest'));
+  
+  // Usar los productos seleccionados directamente
+  const prods = Object.values(selected).slice(0, 6);
+  const cols = prods.length <= 4 ? 2 : 2;
+  const rows = Math.ceil(prods.length / cols);
+
+  const CELL_W = 540;
+  const CELL_H = 640;
+  const PAD = 32;
+  const HEADER_H = 120;
+  const FOOTER_H = 80;
+  const GAP = 16;
+
+  const W = cols * CELL_W + (cols + 1) * GAP;
+  const H = HEADER_H + rows * (CELL_H + GAP) + GAP + FOOTER_H;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Fondo
+  ctx.fillStyle = '#f7f5f2';
+  ctx.fillRect(0, 0, W, H);
+
+  // Header
+  ctx.save();
+  ctx.font = 'italic 400 64px Georgia,serif';
+  ctx.fillStyle = '#b5704a';
+  ctx.textAlign = 'center';
+  ctx.fillText('Deperchas', W/2, 72);
+  ctx.restore();
+
+  ctx.save();
+  ctx.font = '300 26px sans-serif';
+  ctx.fillStyle = '#8a847c';
+  ctx.textAlign = 'center';
+  ctx.fillText('deperchas.com', W/2, 104);
+  ctx.restore();
+
+  // Línea bajo header
+  ctx.save();
+  ctx.strokeStyle = '#e8e4de';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD, HEADER_H - 8);
+  ctx.lineTo(W - PAD, HEADER_H - 8);
+  ctx.stroke();
+  ctx.restore();
+
+  // Celdas
+  for(let i = 0; i < prods.length; i++){
+    const p = prods[i];
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = GAP + col * (CELL_W + GAP);
+    const y = HEADER_H + GAP + row * (CELL_H + GAP);
+
+    // Fondo celda
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.07)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 3;
+    roundRect(ctx, x, y, CELL_W, CELL_H, 12);
+    ctx.fill();
+    ctx.restore();
+
+    // Foto
+    const imgSrc = p.image || p.image2;
+    const IMG_H = CELL_H - 140;
+    if(imgSrc){
+      try{
+        const photo = await loadImage(imgSrc);
+        ctx.save();
+        ctx.beginPath();
+        roundRect(ctx, x, y, CELL_W, IMG_H, 12);
+        ctx.clip();
+        const scale = Math.max(CELL_W / photo.width, IMG_H / photo.height);
+        ctx.drawImage(photo,
+          x + (CELL_W - photo.width * scale) / 2,
+          y + (IMG_H - photo.height * scale) / 2,
+          photo.width * scale, photo.height * scale
+        );
+        ctx.restore();
+      }catch{}
+    }
+
+    // Info bajo la foto
+    const infoY = y + IMG_H + 16;
+
+    // Nombre
+    ctx.save();
+    ctx.font = 'italic 400 26px Georgia,serif';
+    ctx.fillStyle = '#1a1714';
+    ctx.textAlign = 'left';
+    wrapTextMax(ctx, p.name || '', x + 20, infoY, CELL_W - 40, 32, 2);
+    ctx.restore();
+
+    // Precio
+    if(p.price){
+      const lista = parseFloat(p.price);
+      const ef = lista * 0.8;
+      ctx.save();
+      ctx.font = '500 24px sans-serif';
+      ctx.fillStyle = '#b5704a';
+      ctx.textAlign = 'left';
+      ctx.fillText(fmt(lista), x + 20, infoY + 72);
+      ctx.restore();
+      ctx.save();
+      ctx.font = '300 20px sans-serif';
+      ctx.fillStyle = '#4fa3a0';
+      ctx.textAlign = 'left';
+      ctx.fillText('Efectivo: ' + fmt(ef), x + 20, infoY + 100);
+      ctx.restore();
+    }
+  }
+
+  // Footer
+  ctx.save();
+  ctx.strokeStyle = '#e8e4de';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD, H - FOOTER_H + 12);
+  ctx.lineTo(W - PAD, H - FOOTER_H + 12);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.font = '300 24px sans-serif';
+  ctx.fillStyle = '#8a847c';
+  ctx.textAlign = 'center';
+  ctx.fillText('Consultas y pedidos por WhatsApp · ' + LINK, W/2, H - FOOTER_H + 52);
+  ctx.restore();
+
+  // Descargar
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'deperchas-catalogo.jpg';
+    a.click();
+    toast('✓ Catálogo descargado');
+    btn.disabled = false;
+    btn.textContent = '📋 Generar catálogo grilla';
+  }, 'image/jpeg', 0.93);
+}
+
+// wrapText con máximo de líneas
+function wrapTextMax(ctx, text, x, y, maxW, lh, maxLines){
+  const words = text.split(' ');
+  let line = '';
+  let lines = 0;
+  for(let i = 0; i < words.length; i++){
+    const test = line + words[i] + ' ';
+    if(ctx.measureText(test).width > maxW && i > 0){
+      ctx.fillText(line.trim(), x, y);
+      line = words[i] + ' ';
+      y += lh;
+      lines++;
+      if(lines >= maxLines - 1) break;
+    } else {
+      line = test;
+    }
+  }
+  if(line) ctx.fillText(line.trim(), x, y);
 }
 
 function wrapText(ctx,text,x,y,maxW,lh){const words=text.split(' ');let line='';for(let i=0;i<words.length;i++){const test=line+words[i]+' ';if(ctx.measureText(test).width>maxW&&i>0){ctx.fillText(line,x,y);line=words[i]+' ';y+=lh;}else line=test;}ctx.fillText(line,x,y);}
