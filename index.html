@@ -685,22 +685,26 @@ function mostrarCarrusel(){
 
 function generarCaption(r){
   const p=r.product;
+  const nombre = r.nombre || p.name || '';
+
   if(r.tipo==='Pinterest'){
-    // Caption para Pinterest: sin precio, con link
-    let txt=r.nombre+'\n';
-    if(p.category) txt+=p.category+'\n';
-    txt+='✨ Descubrí toda la colección en '+LINK;
+    let txt = nombre + '\n';
+    if(p.category) txt += p.category + '\n';
+    txt += '✨ Descubrí toda la colección en ' + LINK;
     return txt;
   }
-  let txt=r.nombre+'\n';
+
+  let txt = nombre + '\n';
+
   if(r.tipo==='Ficha precio' && p.price){
-    const lista=parseFloat(p.price);
-    txt+='Lista: '+fmt(lista)+'\n';
-    txt+='Transferencia: '+fmt(lista*0.9)+' (−10%)\n';
-    txt+='Efectivo: '+fmt(lista*0.8)+' (−20%)\n';
+    const lista = parseFloat(p.price);
+    txt += 'Lista: ' + fmt(lista) + '\n';
+    txt += 'Transferencia: ' + fmt(lista*0.9) + ' (−10%)\n';
+    txt += 'Efectivo: ' + fmt(lista*0.8) + ' (−20%)\n';
   }
-  if(activeBadges.length) txt+=activeBadges.join(' · ')+'\n';
-  txt+='🔗 '+LINK;
+
+  if(activeBadges.length) txt += activeBadges.join(' · ') + '\n';
+  txt += '🔗 ' + LINK;
   return txt;
 }
 
@@ -754,19 +758,45 @@ async function compartirActual(){
 }
 
 async function descargarYCopiar(){
-  const r=results[carruselIdx];
-  const caption=document.getElementById('carruselCaption').value;
-  try{await navigator.clipboard.writeText(caption);}catch{}
+  const ta = document.getElementById('carruselCaption');
+  const caption = ta.value;
+  
+  // Guardar posición del scroll para no saltar
+  const scrollY = window.scrollY;
+  
+  // Seleccionar y copiar el textarea
+  ta.select();
+  ta.setSelectionRange(0, 99999);
+  let copiado = false;
+  try { document.execCommand('copy'); copiado = true; } catch(e){}
+  
+  // Si execCommand falla, intentar clipboard API
+  if(!copiado){
+    try { await navigator.clipboard.writeText(caption); copiado = true; } catch(e){}
+  }
+  
+  // Restaurar scroll
+  window.scrollTo(0, scrollY);
+  
   descargarActual(false);
-  toast('✓ Imagen ' + (carruselIdx+1) + ' de ' + results.length + ' descargada · caption copiado');
+  toast(copiado ? '✓ Imagen descargada · caption copiado' : '✓ Imagen descargada — seleccioná el texto y copiá con Ctrl+C');
 }
 
 let wpAbierto = false;
 async function copiarYAbrirWP(){
-  const r=results[carruselIdx];
-  const caption=document.getElementById('carruselCaption').value;
-  try{await navigator.clipboard.writeText(caption);}catch{}
+  const ta = document.getElementById('carruselCaption');
+  const caption = ta.value;
+  const scrollY = window.scrollY;
+  
+  ta.select();
+  ta.setSelectionRange(0, 99999);
+  let copiado = false;
+  try { document.execCommand('copy'); copiado = true; } catch(e){}
+  if(!copiado){ try { await navigator.clipboard.writeText(caption); copiado = true; } catch(e){} }
+  
+  window.scrollTo(0, scrollY);
   descargarActual(false);
+  
   if(!wpAbierto){
     const link = document.createElement('a');
     link.href = 'whatsapp://';
