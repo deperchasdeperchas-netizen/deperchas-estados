@@ -76,6 +76,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .toggle-switch input:checked+.toggle-slider{background:var(--pinterest)}
 .toggle-switch input:checked+.toggle-slider:before{transform:translateX(20px)}
 
+/* Toggle sin precio */
+.sinprecio-toggle{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#f5f5ff;border:1px solid #d0d0f5;border-radius:var(--radius-sm);margin-top:.75rem;cursor:pointer;user-select:none}
+.sp-icon{width:28px;height:28px;background:#6c7a89;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.sp-label{font-size:13px;color:#3a3a7a;font-weight:500}
+.sinprecio-toggle .toggle-switch input:checked+.toggle-slider{background:#6c7a89}
+
 /* Nombres editables */
 .nombres-panel{margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem}
 .nombres-panel h3{font-size:13px;font-weight:500;color:var(--muted);margin-bottom:.75rem}
@@ -221,6 +227,19 @@ input[type=file]{display:none}
       </div>
     </label>
 
+    <!-- Toggle Sin Precio -->
+    <label class="sinprecio-toggle" for="toggleSinPrecio">
+      <div class="sp-icon">🏷️</div>
+      <div class="pi-texts">
+        <div class="sp-label">Generar versión sin precio</div>
+        <div class="pi-desc">Solo logo y nombre del modelo, sin descuentos</div>
+      </div>
+      <div class="toggle-switch">
+        <input type="checkbox" id="toggleSinPrecio" onchange="generarSinPrecio=this.checked">
+        <span class="toggle-slider"></span>
+      </div>
+    </label>
+
     <!-- Nombres editables -->
     <div class="nombres-panel" id="nombresPanel">
       <h3>✏️ Revisá los nombres antes de generar</h3>
@@ -297,6 +316,7 @@ let selected = {};
 let activeCatFilter = 'todos';
 let activeBadges = [];
 let generarPinterest = false;
+let generarSinPrecio = false;
 let results = [];
 let carruselIdx = 0;
 
@@ -450,7 +470,8 @@ async function generarTodas(){
   prods.forEach(p=>{
     const imgs=[p.image,p.image2,p.image3,p.image4,p.image5,p.image6,p.image7].filter(Boolean);
     total += imgs.length;
-    if(generarPinterest && imgs.length > 0) total += 1; // una Pinterest por producto
+    if(generarPinterest && imgs.length > 0) total += 1;
+    if(generarSinPrecio && imgs.length > 0) total += 1;
   });
 
   let done=0;
@@ -464,6 +485,14 @@ async function generarTodas(){
       const esUltima = i===imgs.length-1;
       const blob = esUltima ? await genFicha(p, imgs[i]) : await genLookbook(p, imgs[i]);
       results.push({nombre:p.name, blob, src:imgs[i], tipo:esUltima?'Ficha precio':'Lookbook', product:p});
+      done++; progFill.style.width=(done/total*100)+'%';
+    }
+
+    // Versión sin precio (logo + nombre, usa la última foto)
+    if(generarSinPrecio){
+      progTxt.textContent=p.name+' — versión sin precio';
+      const blob = await genSinPrecio(p, imgs[imgs.length-1]);
+      results.push({nombre:p.name, blob, src:imgs[imgs.length-1], tipo:'Sin precio', product:p});
       done++; progFill.style.width=(done/total*100)+'%';
     }
 
@@ -578,6 +607,65 @@ async function genFicha(p, imgSrc){
   return new Promise(r=>canvas.toBlob(b=>r(b),'image/jpeg',0.93));
 }
 
+// FUNCIÓN: Versión sin precio (logo + nombre)
+async function genSinPrecio(p, imgSrc){
+  const W=1080,H=1920,canvas=document.createElement('canvas');
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+
+  // Foto de fondo
+  try{
+    const photo=await loadImage(imgSrc);
+    const scale=Math.max(W/photo.width,H/photo.height);
+    ctx.drawImage(photo,(W-photo.width*scale)/2,(H-photo.height*scale)/2,photo.width*scale,photo.height*scale);
+  }catch{ctx.fillStyle='#e8e4de';ctx.fillRect(0,0,W,H);}
+
+  // Gradiente inferior igual que la ficha
+  const pad=60;
+  const panelH = H * 0.28;
+  const grad=ctx.createLinearGradient(0,H-panelH-120,0,H);
+  grad.addColorStop(0,'rgba(20,16,13,0)');
+  grad.addColorStop(0.15,'rgba(20,16,13,0.93)');
+  grad.addColorStop(1,'rgba(20,16,13,0.98)');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,H-panelH-120,W,panelH+120);
+
+  let y = H - panelH + 40;
+
+  // Nombre del producto
+  ctx.save();
+  ctx.font='italic 500 62px Georgia,serif';
+  ctx.fillStyle='#fff';
+  ctx.textAlign='left';
+  ctx.shadowColor='rgba(0,0,0,0.3)';
+  ctx.shadowBlur=6;
+  wrapText(ctx, p.name||'', pad, y, W-pad*2, 70);
+  ctx.restore();
+
+  y += ((p.name||'').length>28) ? 155 : 85;
+
+  // Línea separadora
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,0.18)';
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(pad,y);
+  ctx.lineTo(W-pad,y);
+  ctx.stroke();
+  ctx.restore();
+  y += 38;
+
+  // Link
+  ctx.save();
+  ctx.font='300 32px sans-serif';
+  ctx.fillStyle='rgba(255,255,255,0.55)';
+  ctx.textAlign='left';
+  ctx.fillText(LINK, pad, y);
+  ctx.restore();
+
+  return new Promise(r=>canvas.toBlob(b=>r(b),'image/jpeg',0.93));
+}
+
 // NUEVA FUNCIÓN: Versión Pinterest
 async function genPinterest(p, imgSrc){
   const W=1000,H=1500,canvas=document.createElement('canvas');
@@ -670,6 +758,9 @@ function mostrarCarrusel(){
   if(r.tipo==='Pinterest'){
     tipoEl.textContent='📌 Versión Pinterest — sin precio';
     tipoEl.className='carrusel-tipo tipo-pinterest';
+  } else if(r.tipo==='Sin precio'){
+    tipoEl.textContent='🏷️ Versión sin precio — solo nombre';
+    tipoEl.className='carrusel-tipo';
   } else {
     tipoEl.textContent=r.tipo==='Ficha precio'?'📋 Ficha con precio y descuentos':'🖼 Lookbook';
     tipoEl.className='carrusel-tipo';
@@ -816,14 +907,14 @@ async function copiarYAbrirWP(){
 function descargarActual(avanzar=true){
   const r=results[carruselIdx];
   const fname=(r.nombre||'prenda').toLowerCase().replace(/[^a-z0-9]/gi,'-');
-  const sufijo = r.tipo==='Pinterest' ? '-pinterest' : r.tipo==='Ficha precio' ? '-ficha' : '';
+  const sufijo = r.tipo==='Pinterest' ? '-pinterest' : r.tipo==='Ficha precio' ? '-ficha' : r.tipo==='Sin precio' ? '-sinprecio' : '';
   const a=document.createElement('a');a.href=URL.createObjectURL(r.blob);a.download='deperchas-'+fname+sufijo+'.jpg';a.click();
   if(avanzar) setTimeout(()=>siguienteCarrusel(),400);
 }
 
 function dlTodas(){ results.forEach((r,i)=>setTimeout(()=>{
   const fname=(r.nombre||'prenda').toLowerCase().replace(/[^a-z0-9]/gi,'-');
-  const sufijo = r.tipo==='Pinterest' ? '-pinterest' : r.tipo==='Ficha precio' ? '-ficha' : '';
+  const sufijo = r.tipo==='Pinterest' ? '-pinterest' : r.tipo==='Ficha precio' ? '-ficha' : r.tipo==='Sin precio' ? '-sinprecio' : '';
   const a=document.createElement('a');a.href=URL.createObjectURL(r.blob);a.download='deperchas-'+fname+sufijo+'.jpg';a.click();
 },i*400)); }
 
@@ -859,7 +950,7 @@ function renderResults(){
     const btnDl=document.createElement('button');btnDl.className='btn-dl-r';btnDl.textContent='⬇';
     btnDl.onclick=()=>{
       const fname=(r.nombre||'').toLowerCase().replace(/[^a-z0-9]/gi,'-');
-      const sufijo = r.tipo==='Pinterest' ? '-pinterest' : r.tipo==='Ficha precio' ? '-ficha' : '';
+      const sufijo = r.tipo==='Pinterest' ? '-pinterest' : r.tipo==='Ficha precio' ? '-ficha' : r.tipo==='Sin precio' ? '-sinprecio' : '';
       const a=document.createElement('a');a.href=URL.createObjectURL(r.blob);a.download='deperchas-'+fname+sufijo+'.jpg';a.click();
     };
     const btnSh=document.createElement('button');btnSh.className='btn-sh-r';btnSh.textContent='↗';
