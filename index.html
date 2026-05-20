@@ -875,20 +875,17 @@ async function genCatalogo(){
   btn.disabled = true;
   btn.textContent = 'Generando catálogo...';
 
-  // Tomar solo lookbooks (primera imagen de cada producto, no fichas ni pinterest)
-  const lookbooks = results.filter(r => r.tipo === 'Lookbook' || (results.filter(x=>x.product.id===r.product.id).indexOf(r)===0 && r.tipo !== 'Pinterest'));
-  
-  // Usar los productos seleccionados directamente
   const prods = Object.values(selected).slice(0, 6);
-  const cols = prods.length <= 4 ? 2 : 2;
+  if(!prods.length){ toast('Seleccioná al menos un producto'); btn.disabled=false; btn.textContent='📋 Generar catálogo grilla'; return; }
+
+  const cols = 2;
   const rows = Math.ceil(prods.length / cols);
 
-  const CELL_W = 540;
-  const CELL_H = 640;
-  const PAD = 32;
+  const CELL_W = 520;
+  const CELL_H = 620;
+  const GAP = 20;
   const HEADER_H = 120;
   const FOOTER_H = 80;
-  const GAP = 16;
 
   const W = cols * CELL_W + (cols + 1) * GAP;
   const H = HEADER_H + rows * (CELL_H + GAP) + GAP + FOOTER_H;
@@ -901,32 +898,32 @@ async function genCatalogo(){
   ctx.fillStyle = '#f7f5f2';
   ctx.fillRect(0, 0, W, H);
 
-  // Header
+  // Header — logo
   ctx.save();
-  ctx.font = 'italic 400 64px Georgia,serif';
+  ctx.font = 'italic 400 62px Georgia,serif';
   ctx.fillStyle = '#b5704a';
   ctx.textAlign = 'center';
-  ctx.fillText('Deperchas', W/2, 72);
+  ctx.fillText('Deperchas', W/2, 70);
   ctx.restore();
 
   ctx.save();
-  ctx.font = '300 26px sans-serif';
+  ctx.font = '300 24px sans-serif';
   ctx.fillStyle = '#8a847c';
   ctx.textAlign = 'center';
-  ctx.fillText('deperchas.com', W/2, 104);
+  ctx.fillText('deperchas.com', W/2, 102);
   ctx.restore();
 
-  // Línea bajo header
+  // Línea header
   ctx.save();
   ctx.strokeStyle = '#e8e4de';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(PAD, HEADER_H - 8);
-  ctx.lineTo(W - PAD, HEADER_H - 8);
+  ctx.moveTo(GAP, HEADER_H - 8);
+  ctx.lineTo(W - GAP, HEADER_H - 8);
   ctx.stroke();
   ctx.restore();
 
-  // Celdas
+  // Celdas — un producto por celda
   for(let i = 0; i < prods.length; i++){
     const p = prods[i];
     const col = i % cols;
@@ -934,62 +931,70 @@ async function genCatalogo(){
     const x = GAP + col * (CELL_W + GAP);
     const y = HEADER_H + GAP + row * (CELL_H + GAP);
 
-    // Fondo celda
+    // Fondo celda blanco con sombra suave
     ctx.save();
     ctx.fillStyle = '#fff';
     ctx.shadowColor = 'rgba(0,0,0,0.07)';
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 14;
     ctx.shadowOffsetY = 3;
-    roundRect(ctx, x, y, CELL_W, CELL_H, 12);
+    ctx.beginPath();
+    roundRect(ctx, x, y, CELL_W, CELL_H, 14);
     ctx.fill();
     ctx.restore();
 
-    // Foto
-    const imgSrc = p.image || p.image2;
-    const IMG_H = CELL_H - 140;
+    // Foto — usa la primera imagen disponible del producto
+    const imgSrc = [p.image,p.image2,p.image3].find(Boolean);
+    const IMG_H = CELL_H - 148;
+
     if(imgSrc){
       try{
         const photo = await loadImage(imgSrc);
         ctx.save();
         ctx.beginPath();
-        roundRect(ctx, x, y, CELL_W, IMG_H, 12);
+        // Clip solo arriba redondeado
+        ctx.moveTo(x + 14, y);
+        ctx.lineTo(x + CELL_W - 14, y);
+        ctx.quadraticCurveTo(x + CELL_W, y, x + CELL_W, y + 14);
+        ctx.lineTo(x + CELL_W, y + IMG_H);
+        ctx.lineTo(x, y + IMG_H);
+        ctx.lineTo(x, y + 14);
+        ctx.quadraticCurveTo(x, y, x + 14, y);
+        ctx.closePath();
         ctx.clip();
         const scale = Math.max(CELL_W / photo.width, IMG_H / photo.height);
-        ctx.drawImage(photo,
-          x + (CELL_W - photo.width * scale) / 2,
-          y + (IMG_H - photo.height * scale) / 2,
-          photo.width * scale, photo.height * scale
-        );
+        const px = x + (CELL_W - photo.width * scale) / 2;
+        const py = y + (IMG_H - photo.height * scale) / 2;
+        ctx.drawImage(photo, px, py, photo.width * scale, photo.height * scale);
         ctx.restore();
       }catch{}
     }
 
-    // Info bajo la foto
-    const infoY = y + IMG_H + 16;
-
     // Nombre
+    const infoY = y + IMG_H + 22;
     ctx.save();
-    ctx.font = 'italic 400 26px Georgia,serif';
+    ctx.font = 'italic 400 24px Georgia,serif';
     ctx.fillStyle = '#1a1714';
     ctx.textAlign = 'left';
-    wrapTextMax(ctx, p.name || '', x + 20, infoY, CELL_W - 40, 32, 2);
+    wrapTextMax(ctx, p.name || 'Sin nombre', x + 18, infoY, CELL_W - 36, 30, 2);
     ctx.restore();
 
-    // Precio
+    // Precio lista
     if(p.price){
       const lista = parseFloat(p.price);
       const ef = lista * 0.8;
+
       ctx.save();
-      ctx.font = '500 24px sans-serif';
+      ctx.font = '500 22px sans-serif';
       ctx.fillStyle = '#b5704a';
       ctx.textAlign = 'left';
-      ctx.fillText(fmt(lista), x + 20, infoY + 72);
+      ctx.fillText(fmt(lista), x + 18, infoY + 68);
       ctx.restore();
+
       ctx.save();
-      ctx.font = '300 20px sans-serif';
+      ctx.font = '300 19px sans-serif';
       ctx.fillStyle = '#4fa3a0';
       ctx.textAlign = 'left';
-      ctx.fillText('Efectivo: ' + fmt(ef), x + 20, infoY + 100);
+      ctx.fillText('Efectivo: ' + fmt(ef), x + 18, infoY + 96);
       ctx.restore();
     }
   }
@@ -999,16 +1004,16 @@ async function genCatalogo(){
   ctx.strokeStyle = '#e8e4de';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(PAD, H - FOOTER_H + 12);
-  ctx.lineTo(W - PAD, H - FOOTER_H + 12);
+  ctx.moveTo(GAP, H - FOOTER_H + 10);
+  ctx.lineTo(W - GAP, H - FOOTER_H + 10);
   ctx.stroke();
   ctx.restore();
 
   ctx.save();
-  ctx.font = '300 24px sans-serif';
+  ctx.font = '300 22px sans-serif';
   ctx.fillStyle = '#8a847c';
   ctx.textAlign = 'center';
-  ctx.fillText('Consultas y pedidos por WhatsApp · ' + LINK, W/2, H - FOOTER_H + 52);
+  ctx.fillText('Consultas y pedidos por WhatsApp  ·  ' + LINK, W/2, H - FOOTER_H + 50);
   ctx.restore();
 
   // Descargar
