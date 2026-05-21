@@ -469,7 +469,6 @@ async function generarTodas(){
   }
 
   progTxt.textContent='✓ ¡Listas! '+results.length+' imágenes generadas';
-  await procesarVideosSiHayAudio();
   btn.disabled=false;
   document.getElementById('panelGenerar').style.display='none';
   renderResults();
