@@ -147,25 +147,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn-catalogo:disabled{opacity:.5;cursor:default}
 .btn-car-start:hover{background:var(--teal);color:#fff}
 
-/* Modal preview */
-.modal-overlay{position:fixed;inset:0;background:rgba(20,16,13,0.75);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem}
-.modal-overlay.open{display:flex}
-.modal-box{background:var(--surface);border-radius:var(--radius);max-width:480px;width:100%;max-height:90vh;overflow-y:auto;position:relative}
-.modal-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.15);border:none;cursor:pointer;font-size:16px;color:#fff;display:flex;align-items:center;justify-content:center;z-index:10}
-.modal-close:hover{background:rgba(0,0,0,0.35)}
-.modal-imgs{display:flex;gap:4px;overflow-x:auto;padding:4px}
-.modal-imgs img{height:180px;width:auto;flex-shrink:0;border-radius:6px;object-fit:cover;cursor:pointer;border:2px solid transparent;transition:border-color .15s}
-.modal-imgs img.activa{border-color:var(--accent)}
-.modal-preview-img{width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:var(--border)}
-.modal-info{padding:1rem 1.25rem}
-.modal-nombre{font-family:"Playfair Display",serif;font-style:italic;font-size:18px;margin-bottom:4px}
-.modal-cat{font-size:11px;color:var(--muted);margin-bottom:.5rem}
-.modal-precio{font-size:15px;color:var(--accent);font-weight:500;margin-bottom:1rem}
-.modal-acciones{display:flex;gap:8px;padding:0 1.25rem 1.25rem}
-.btn-modal-sel{flex:1;padding:11px;font-size:13px;font-family:"DM Sans",sans-serif;font-weight:500;border-radius:var(--radius-sm);border:none;background:var(--accent);color:#fff;cursor:pointer}
-.btn-modal-sel.desel{background:#e8e4de;color:var(--muted)}
-.btn-modal-sel:hover{opacity:.88}
-.btn-modal-cerrar{padding:11px 16px;font-size:13px;font-family:"DM Sans",sans-serif;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
 
 .loading{text-align:center;padding:3rem;color:var(--muted);font-size:14px}
 .empty{text-align:center;padding:3rem;color:var(--muted);font-size:13px}
@@ -283,24 +264,6 @@ input[type=file]{display:none}
     <button class="btn-skip" onclick="siguienteCarrusel()">Saltar → siguiente</button>
   </div>
 
-<!-- Modal preview -->
-<div class="modal-overlay" id="modalOverlay" onclick="cerrarModal(event)">
-  <div class="modal-box" id="modalBox">
-    <button class="modal-close" onclick="cerrarModal(null,true)">✕</button>
-    <img class="modal-preview-img" id="modalImg" src="" alt="">
-    <div class="modal-imgs" id="modalImgs"></div>
-    <div class="modal-info">
-      <div class="modal-nombre" id="modalNombre"></div>
-      <div class="modal-cat" id="modalCat"></div>
-      <div class="modal-precio" id="modalPrecio"></div>
-    </div>
-    <div class="modal-acciones">
-      <button class="btn-modal-sel" id="btnModalSel" onclick="toggleDesdeModal()"></button>
-      <button class="btn-modal-cerrar" onclick="cerrarModal(null,true)">Cerrar</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -381,7 +344,7 @@ function renderProductos(){
     const imgs = [p.image,p.image2,p.image3,p.image4,p.image5,p.image6,p.image7].filter(Boolean);
     const card = document.createElement('div');
     card.className = 'prod-card' + (selected[p.id]?' selected':'');
-    card.onclick = ()=>abrirModal(p);
+    card.onclick = ()=>toggleSelect(p, card);
     if(p.publicar_ahora){ const badge=document.createElement('div'); badge.className='prod-ahora'; badge.textContent='⚡ HOY'; card.appendChild(badge); }
     if(p.is_published_ig){ const pub=document.createElement('div'); pub.className='prod-publicado'; pub.textContent='✓ publicado'; card.appendChild(pub); }
     const check = document.createElement('div'); check.className='prod-card-check'; check.textContent='✓'; card.appendChild(check);
@@ -1142,185 +1105,9 @@ function wrapTextMax(ctx, text, x, y, maxW, lh, maxLines){
 function wrapText(ctx,text,x,y,maxW,lh){const words=text.split(' ');let line='';for(let i=0;i<words.length;i++){const test=line+words[i]+' ';if(ctx.measureText(test).width>maxW&&i>0){ctx.fillText(line,x,y);line=words[i]+' ';y+=lh;}else line=test;}ctx.fillText(line,x,y);}
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 
-// --- LÓGICA DE INSTAGRAM Y VIDEO ---
-const IG_TOKEN = 'EAATAFlLYTikBRa5lHa6YNb26tXLkhQr5UKNYcBECIlYMGoavuVaCpfqTYAD5888xRsp1NnDvl1UqTDXZApd2REZCLsdKaNH1QovWbwZCZAs5wCdWXFDYDVBhJJPNIOl5aUQ4E6ZA6qYsDVJHYs94CImIZCTtORWwYbY1MvrjBsZBSu2MTl8qkuhVLOR6AakfXdxw9MpZCEWgeMydIFUIg6axUq482IjpZCwZDZD';
-const IG_ID = '17841445890441892';
-let ffmpeg = null;
-let selectedMusic = null;
-const musicTracks = [
-  { id:'lofi', name:'Chill Lofi', url:'https://cdn.pixabay.com/audio/2022/05/27/audio_1808f3030e.mp3' },
-  { id:'jazz', name:'Midnight Jazz', url:'https://cdn.pixabay.com/audio/2022/01/26/audio_d0c6ff1101.mp3' }
-];
 
-async function publicarIGStory(){
-  const r = results[carruselIdx]; const btn = document.getElementById('btnIG');
-  btn.disabled = true; btn.textContent = 'Subiendo...';
-  toast('Subiendo a Instagram...');
-  try {
-    const fn = `ig_temp_${Date.now()}.jpg`;
-    const uploadRes = await fetch(`${SUPA_URL}/storage/v1/object/ig-temp/${fn}`, {
-      method:'POST', headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'image/jpeg'}, body:r.blob
-    });
-    if(!uploadRes.ok) throw new Error('Error al subir imagen');
-    const url = `${SUPA_URL}/storage/v1/object/public/ig-temp/${fn}`;
-    const mRes = await fetch(`https://graph.facebook.com/v25.0/${IG_ID}/media`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({image_url:url, media_type:'IMAGE', caption:generarCaption(r), access_token:IG_TOKEN})
-    });
-    const mData = await mRes.json();
-    if(!mData.id) throw new Error(mData.error?.message || 'Error API Meta');
-    await fetch(`https://graph.facebook.com/v25.0/${IG_ID}/media_publish`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({creation_id:mData.id, access_token:IG_TOKEN})
-    });
-    toast('✓ Story publicada con éxito!'); btn.textContent = '✓ Publicada'; setTimeout(siguienteCarrusel, 1000);
-  } catch(e){ console.error(e); toast('Error al publicar: ' + e.message); btn.disabled = false; btn.textContent = 'Publicar Story en Instagram'; }
-}
 
-async function generarVideo(){
-  if(!selectedMusic){ document.getElementById('musicPanel').style.display='block'; renderMusicList(); return; }
-  const r = results[carruselIdx]; const btn = document.getElementById('btnVideo');
-  const prog = document.getElementById('videoProgress'); btn.disabled = true; btn.textContent = 'Procesando...';
-  try {
-    if(!ffmpeg){ ffmpeg=FFmpeg.createFFmpeg({log:true, corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'}); await ffmpeg.load(); }
-    prog.textContent = 'Cargando imagen...';
-    ffmpeg.FS('writeFile', 'i.jpg', new Uint8Array(await r.blob.arrayBuffer()));
-    prog.textContent = 'Cargando audio...';
-    ffmpeg.FS('writeFile', 'a.mp3', new Uint8Array(await(await fetch(selectedMusic.url)).arrayBuffer()));
-    prog.textContent = 'Renderizando video ULTRA LIGERO (10s)...';
-    await ffmpeg.run('-loop','1','-framerate','1','-i','i.jpg','-i','a.mp3','-t','10','-c:v','libx264','-preset','ultrafast','-tune','stillimage','-pix_fmt','yuv420p','-vf','scale=540:960','-c:a','aac','-shortest','o.mp4');
-    const data = ffmpeg.FS('readFile', 'o.mp4');
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data.buffer], {type:'video/mp4'}));
-    a.download = `video-deperchas-${Date.now()}.mp4`; a.click();
-    toast('✓ Video descargado exitosamente'); prog.textContent = '';
-  } catch(e){ 
-    console.error(e); 
-    toast('Error: Tu dispositivo/navegador restringe la memoria estrictamente.'); 
-    prog.textContent = 'Falló por límite de RAM del navegador.';
-  } finally { btn.disabled=false; btn.textContent='🎬 Generar video con música (10s)'; }
-}
 
-function renderMusicList(){
-  const l = document.getElementById('musicList'); l.innerHTML='';
-  musicTracks.forEach(t=>{
-    const i=document.createElement('div'); i.style.cssText="padding:8px; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:12px; background:white;";
-    i.textContent=t.name; i.onclick=()=>{selectedMusic=t; toast('Música elegida: '+t.name);}; l.appendChild(i);
-  });
-}
-
-function cargarMusicaPropia(input){
-  const file = input.files[0]; if(!file) return;
-  selectedMusic = { id:'custom', name:file.name, url:URL.createObjectURL(file) };
-  document.getElementById('musicUploadName').textContent = file.name;
-  renderMusicList();
-}
-
-async function crearVideoReel(r, audioFile) {
-  const cloudName = 'danlc50hp';
-  const unsignedPreset = 'deperchas_videos';
-  try {
-    const formDataImg = new FormData();
-    formDataImg.append('file', r.blob);
-    formDataImg.append('upload_preset', unsignedPreset);
-    const resImg = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: formDataImg });
-    const dataImg = await resImg.json();
-    const formDataAudio = new FormData();
-    formDataAudio.append('file', audioFile);
-    formDataAudio.append('upload_preset', unsignedPreset);
-    formDataAudio.append('resource_type', 'video'); 
-    const resAudio = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, { method: 'POST', body: formDataAudio });
-    const dataAudio = await resAudio.json();
-    if (dataImg.public_id && dataAudio.public_id) {
-      const audioId = dataAudio.public_id.replace(/\//g, ':');
-      const imageId = dataImg.public_id.replace(/\//g, ':');
-      const videoUrl = `https://res.cloudinary.com/${cloudName}/video/upload/c_fill,h_1280,w_720,du_10/l_video:${audioId},fl_layer_apply,so_0/${imageId}.mp4`;
-      console.log("URL del video:", videoUrl);
-      const a = document.createElement('a'); a.href = videoUrl; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      toast('✓ Video listo — se abrió en nueva pestaña');
-    }
-  } catch (e) {
-    console.error("Error en el proceso de Cloudinary:", e);
-  }
-}
-
-async function procesarVideosSiHayAudio() {
-  return; // Función reservada para uso futuro
-}
-
-// MODAL PREVIEW
-let modalProducto = null;
-
-function abrirModal(p){
-  modalProducto = p;
-  const imgs = [p.image,p.image2,p.image3,p.image4,p.image5,p.image6,p.image7].filter(Boolean);
-
-  // Imagen principal
-  const mainImg = document.getElementById('modalImg');
-  mainImg.src = imgs[0] || '';
-
-  // Tira de imágenes si hay más de una
-  const imgsEl = document.getElementById('modalImgs');
-  imgsEl.innerHTML = '';
-  if(imgs.length > 1){
-    imgs.forEach((src,i)=>{
-      const img = document.createElement('img');
-      img.src = src;
-      img.className = i===0 ? 'activa' : '';
-      img.onclick = ()=>{
-        mainImg.src = src;
-        imgsEl.querySelectorAll('img').forEach(x=>x.classList.remove('activa'));
-        img.classList.add('activa');
-      };
-      imgsEl.appendChild(img);
-    });
-    imgsEl.style.display = 'flex';
-  } else {
-    imgsEl.style.display = 'none';
-  }
-
-  // Info
-  document.getElementById('modalNombre').textContent = p.name || 'Sin nombre';
-  document.getElementById('modalCat').textContent = [p.category, p.subcategory].filter(Boolean).join(' · ');
-  document.getElementById('modalPrecio').textContent = p.price ? fmt(parseFloat(p.price)) : '';
-
-  // Botón seleccionar
-  actualizarBtnModal();
-
-  document.getElementById('modalOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function actualizarBtnModal(){
-  const btn = document.getElementById('btnModalSel');
-  const esSel = !!selected[modalProducto?.id];
-  btn.textContent = esSel ? '✓ Seleccionada — quitar' : '+ Seleccionar para generar';
-  btn.className = 'btn-modal-sel' + (esSel ? ' desel' : '');
-}
-
-function toggleDesdeModal(){
-  if(!modalProducto) return;
-  if(selected[modalProducto.id]){
-    delete selected[modalProducto.id];
-  } else {
-    selected[modalProducto.id] = modalProducto;
-  }
-  actualizarBtnModal();
-  // Actualizar la card en el grid también
-  document.querySelectorAll('.prod-card').forEach(card=>{
-    const esSel = !!selected[modalProducto.id];
-    // buscar por posicion en filtered
-  });
-  renderProductos();
-  updateSelBar();
-}
-
-function cerrarModal(e, forzar=false){
-  if(forzar || (e && e.target === document.getElementById('modalOverlay'))){
-    document.getElementById('modalOverlay').classList.remove('open');
-    document.body.style.overflow = '';
-    modalProducto = null;
-  }
-}
 
 cargarProductos();
 </script> 
